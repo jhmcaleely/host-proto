@@ -41,12 +41,21 @@ void _bdInit() {
    bdfs_create_hal_at(&cfg, bd, FLASHFS_BASE_ADDR);
 }
 
+void _bdDestroy() {
+    bdfs_destroy_hal(&cfg);
+    bdDestroy(bd);
+}
+
 int _lfs_mount() {
 	return lfs_mount(&lfs, &cfg);
 }
 
 int _lfs_format() {
 	return lfs_format(&lfs, &cfg);
+}
+
+void _lfs_unmount() {
+	lfs_unmount(&lfs);
 }
 */
 import "C"
@@ -80,11 +89,14 @@ func main() {
 	defer f.Close()
 
 	C._bdInit()
+	defer C._bdDestroy()
+
 	lfsres := C._lfs_mount()
 	if lfsres != 0 {
 		C._lfs_format()
 		lfsres = C._lfs_mount()
 	}
+	defer C._lfs_unmount()
 	fmt.Print(lfsres)
 
 	uf := Uf2Frame{}

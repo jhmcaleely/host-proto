@@ -1,5 +1,56 @@
 package main
 
+/*
+#include "lfs.h"
+#include "bdfs_lfs_hal.h"
+#include "block_device.h"
+#include "pico_flash_fs.h"
+
+// configuration of the filesystem is provided by this struct
+struct lfs_config cfg = {
+    // block device operations
+    .read  = bdfs_read,
+    .prog  = bdfs_prog_page,
+    .erase = bdfs_erase_block,
+    .sync  = bdfs_sync_block,
+
+    // block device configuration
+
+    .read_size = 1,
+
+    .prog_size = PICO_PROG_PAGE_SIZE,
+    .block_size = PICO_ERASE_PAGE_SIZE,
+
+    // the number of blocks we use for a flash fs.
+    .block_count = FLASHFS_BLOCK_COUNT,
+
+    // cache needs to be a multiple of the programming page size.
+    .cache_size = PICO_PROG_PAGE_SIZE * 1,
+
+    .lookahead_size = 16,
+    .block_cycles = 500,
+};
+
+lfs_t lfs;
+lfs_file_t file;
+
+struct block_device* bd;
+
+void _bdInit() {
+   bd = bdCreate(PICO_FLASH_BASE_ADDR);
+   bdfs_create_hal_at(&cfg, bd, FLASHFS_BASE_ADDR);
+}
+
+int _lfs_mount() {
+	return lfs_mount(&lfs, &cfg);
+}
+
+int _lfs_format() {
+	return lfs_format(&lfs, &cfg);
+}
+*/
+import "C"
+
 import (
 	"encoding/binary"
 	"fmt"
@@ -28,16 +79,19 @@ func main() {
 	}
 	defer f.Close()
 
+	C._bdInit()
+	lfsres := C._lfs_mount()
+	if lfsres != 0 {
+		C._lfs_format()
+		lfsres = C._lfs_mount()
+	}
+	fmt.Print(lfsres)
+
 	uf := Uf2Frame{}
 	err = binary.Read(f, binary.LittleEndian, &uf)
 	if err != nil {
 		log.Fatalln(err)
 	}
-
-	fmt.Print(uf.NumBlocks)
-	fmt.Print(uf.BlockNo)
-	fmt.Print(uf.MagicStart0)
-	fmt.Print(uf.Flags)
 
 	if2, err := os.Open("fs.uf2")
 	if err != nil {

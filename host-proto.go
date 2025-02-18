@@ -32,7 +32,6 @@ struct lfs_config cfg = {
 };
 
 lfs_t lfs;
-lfs_file_t file;
 
 struct block_device* bd;
 
@@ -57,6 +56,43 @@ int _lfs_format() {
 void _lfs_unmount() {
 	lfs_unmount(&lfs);
 }
+
+int _lfs_file_open(lfs_file_t *file, const char *path) {
+	return lfs_file_open(&lfs, file, path, LFS_O_RDWR | LFS_O_CREAT);
+}
+
+int _lfs_file_close(lfs_file_t *file) {
+	return lfs_file_close(&lfs, file);
+}
+
+int _lfs_file_read(lfs_file_t *file, void *buffer, lfs_size_t size) {
+	return lfs_file_read(&lfs, file, buffer, size);
+}
+
+int _lfs_file_rewind(lfs_file_t *file) {
+	return lfs_file_rewind(&lfs, file);
+}
+
+int _lfs_file_write(lfs_file_t *file, const void *buffer, lfs_size_t size) {
+	return lfs_file_write(&lfs, file, buffer, size);
+}
+
+void readuf2(const char * input) {
+    FILE* iofile = fopen(input, "rb");
+    if (iofile) {
+        bdReadFromUF2(bd, iofile);
+        fclose(iofile);
+    }
+}
+
+void writeuf2(const char * input) {
+    FILE* iofile = fopen(input, "wb");
+    if (iofile) {
+        bdWriteToUF2(bd, iofile);
+
+        fclose(iofile);
+    }
+}
 */
 import "C"
 
@@ -66,6 +102,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"unsafe"
 )
 
 type Uf2Frame struct {
@@ -81,6 +118,22 @@ type Uf2Frame struct {
 	MagicEnd    uint32
 }
 
+func update_boot_count() {
+	var lfsfile C.lfs_file_t
+	C._lfs_file_open(&lfsfile, C.CString("boot_count"))
+	defer C._lfs_file_close(&lfsfile)
+
+	var boot_count C.uint32_t
+	C._lfs_file_read(&lfsfile, unsafe.Pointer(&boot_count), 4)
+	// update boot count
+	boot_count += 1
+	C._lfs_file_rewind(&lfsfile)
+
+	C._lfs_file_write(&lfsfile, unsafe.Pointer(&boot_count), 4)
+
+	fmt.Print(boot_count)
+}
+
 func main() {
 	f, err := os.Open("littlefs-pico.uf2")
 	if err != nil {
@@ -91,6 +144,8 @@ func main() {
 	C._bdInit()
 	defer C._bdDestroy()
 
+	C.readuf2(C.CString("test.uf2"))
+
 	lfsres := C._lfs_mount()
 	if lfsres != 0 {
 		C._lfs_format()
@@ -98,6 +153,10 @@ func main() {
 	}
 	defer C._lfs_unmount()
 	fmt.Print(lfsres)
+
+	update_boot_count()
+
+	C.writeuf2(C.CString("test.uf2"))
 
 	uf := Uf2Frame{}
 	err = binary.Read(f, binary.LittleEndian, &uf)

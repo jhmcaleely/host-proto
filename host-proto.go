@@ -131,7 +131,7 @@ func update_boot_count() {
 
 	C._lfs_file_write(&lfsfile, unsafe.Pointer(&boot_count), 4)
 
-	fmt.Print(boot_count)
+	fmt.Printf("boot count: %d\n", boot_count)
 }
 
 func main() {
@@ -149,10 +149,9 @@ func main() {
 	lfsres := C._lfs_mount()
 	if lfsres != 0 {
 		C._lfs_format()
-		lfsres = C._lfs_mount()
+		C._lfs_mount()
 	}
 	defer C._lfs_unmount()
-	fmt.Print(lfsres)
 
 	update_boot_count()
 

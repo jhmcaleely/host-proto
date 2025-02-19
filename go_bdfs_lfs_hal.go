@@ -2,8 +2,7 @@ package main
 
 /*
 #include "lfs.h"
-#include "bdfs_lfs_hal.h"
-#include "block_device.h"
+#include "pico_flash_device.h"
 #include "pico_flash_fs.h"
 
 int go_bdfs_read_cgo(const struct lfs_config* c, lfs_block_t block, lfs_off_t off, void *buffer, lfs_size_t size);
@@ -36,7 +35,26 @@ struct lfs_config cfg = {
     .block_cycles = 500,
 };
 
-struct block_device* bd;
+struct flash_fs {
+    struct block_device* device;
+    uint32_t fs_flash_base_address;
+};
+
+void bdfs_create_hal_at(struct lfs_config* c, struct block_device* bd, uint32_t fs_base_address) {
+
+    struct flash_fs* fs = malloc(sizeof(struct flash_fs));
+    fs->device = bd;
+    fs->fs_flash_base_address = fs_base_address;
+
+    c->context = fs;
+}
+
+void bdfs_destroy_hal(struct lfs_config* c) {
+
+    free(c->context);
+    c->context = NULL;
+}
+
 int open_flags = LFS_O_RDWR | LFS_O_CREAT;
 
 int go_bdfs_read(struct block_device* bd, uint32_t fs_base_address, lfs_block_t block, lfs_off_t off, void *buffer, lfs_size_t size);

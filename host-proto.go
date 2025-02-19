@@ -3,9 +3,10 @@ package main
 /*
 #include "lfs.h"
 #include "block_device.h"
-#include "bdfs_lfs_hal.h"
 
-extern struct block_device* bd;
+void bdfs_create_hal_at(struct lfs_config* c, struct block_device* bd, uint32_t fs_base_address);
+void bdfs_destroy_hal(struct lfs_config* c);
+
 extern int open_flags;
 extern struct lfs_config cfg;
 
@@ -143,8 +144,12 @@ func mount_and_update_boot() {
 	update_boot_count(lfsp)
 }
 
-func bdReadFromUF2(if2 io.Reader) {
-	bd := C.bd
+type BdFS struct {
+	Device      *C.struct_block_device
+	BaseAddress uint32
+}
+
+func bdReadFromUF2(device BdFS, if2 io.Reader) {
 
 	ufn := Uf2Frame{}
 	for binary.Read(if2, binary.LittleEndian, &ufn) != io.EOF {
@@ -160,27 +165,27 @@ func bdReadFromUF2(if2 io.Reader) {
 		}
 
 		// erase a block before writing any pages to it.
-		if C.bdIsBlockStart(bd, C.uint32_t(ufn.TargetAddr)) {
-			C.bdEraseBlock(bd, C.uint32_t(ufn.TargetAddr))
+		if C.bdIsBlockStart(device.Device, C.uint32_t(ufn.TargetAddr)) {
+			C.bdEraseBlock(device.Device, C.uint32_t(ufn.TargetAddr))
 		}
 
-		C.bdWrite(bd, C.uint32_t(ufn.TargetAddr), (*C.uint8_t)(unsafe.Pointer(&ufn.Data[0])), C.size_t(ufn.PayloadSize))
+		C.bdWrite(device.Device, C.uint32_t(ufn.TargetAddr), (*C.uint8_t)(unsafe.Pointer(&ufn.Data[0])), C.size_t(ufn.PayloadSize))
 	}
 }
 
-func bdWriteToUF2(of io.Writer) {
-	pageTotal := uint32(C.bdCountPages(C.bd))
+func bdWriteToUF2(device BdFS, of io.Writer) {
+	pageTotal := uint32(C.bdCountPages(device.Device))
 	pageCursor := uint32(0)
 
 	for b := uint32(0); b < PICO_DEVICE_BLOCK_COUNT; b++ {
 		for p := uint32(0); p < PICO_FLASH_PAGE_PER_BLOCK; p++ {
-			if C.bdPagePresent(C.bd, C.uint32_t(b), C.uint32_t(p)) {
+			if C.bdPagePresent(device.Device, C.uint32_t(b), C.uint32_t(p)) {
 				ub := Uf2Frame{}
 
 				ub.MagicStart0 = UF2_MAGIC_START0
 				ub.MagicStart1 = UF2_MAGIC_START1
 				ub.Flags = UF2_FLAG_FAMILY_ID
-				ub.TargetAddr = uint32(C.bdTargetAddress(C.bd, C.uint32_t(b), C.uint32_t(p)))
+				ub.TargetAddr = uint32(C.bdTargetAddress(device.Device, C.uint32_t(b), C.uint32_t(p)))
 				ub.PayloadSize = PICO_PROG_PAGE_SIZE
 				ub.BlockNo = pageCursor
 				ub.NumBlocks = pageTotal
@@ -188,7 +193,7 @@ func bdWriteToUF2(of io.Writer) {
 				// documented as FamilyID, Filesize or 0.
 				ub.Reserved = PICO_UF2_FAMILYID
 
-				C.bdRead(C.bd, C.uint32_t(ub.TargetAddr), (*C.uint8_t)(unsafe.Pointer(&ub.Data[0])), C.size_t(PICO_PROG_PAGE_SIZE))
+				C.bdRead(device.Device, C.uint32_t(ub.TargetAddr), (*C.uint8_t)(unsafe.Pointer(&ub.Data[0])), C.size_t(PICO_PROG_PAGE_SIZE))
 
 				ub.MagicEnd = UF2_MAGIC_END
 
@@ -209,17 +214,19 @@ func main() {
 	}
 	defer f.Close()
 
-	C.bd = C.bdCreate(C.uint32_t(PICO_FLASH_BASE_ADDR))
-	defer C.bdDestroy(C.bd)
+	fs := BdFS{}
+	fs.BaseAddress = FLASHFS_BASE_ADDR
+	fs.Device = C.bdCreate(C.uint32_t(PICO_FLASH_BASE_ADDR))
+	defer C.bdDestroy(fs.Device)
 
-	C.bdfs_create_hal_at(&C.cfg, C.bd, C.uint32_t(FLASHFS_BASE_ADDR))
+	C.bdfs_create_hal_at(&C.cfg, fs.Device, C.uint32_t(FLASHFS_BASE_ADDR))
 	defer C.bdfs_destroy_hal(&C.cfg)
 
-	bdReadFromUF2(f)
+	bdReadFromUF2(fs, f)
 
 	mount_and_update_boot()
 
 	f.Seek(0, io.SeekStart)
 
-	bdWriteToUF2(f)
+	bdWriteToUF2(fs, f)
 }

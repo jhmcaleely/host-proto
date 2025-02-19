@@ -3,7 +3,19 @@ package main
 /*
 #include "lfs.h"
 #include "pico_flash_device.h"
-#include "pico_flash_fs.h"
+
+// Defines one region of flash to use for a filesystem. The size is a multiple of
+// the 4096 byte erase size. We calculate it's location working back from the end of the
+// flash device, so that code flashed at the start of the device will not collide.
+// Pico's have a 2Mb flash device, so we're looking to be less than 2Mb.
+
+// 128 blocks will reserve a 512K filsystem - 1/4 of the 2Mb device on a Pico
+
+#define FLASHFS_BLOCK_COUNT 128
+#define FLASHFS_SIZE_BYTES (PICO_ERASE_PAGE_SIZE * FLASHFS_BLOCK_COUNT)
+
+// A start location counted back from the end of the device.
+#define FLASHFS_BASE_ADDR (PICO_FLASH_BASE_ADDR + PICO_FLASH_SIZE_BYTES - FLASHFS_SIZE_BYTES)
 
 int go_bdfs_read_cgo(const struct lfs_config* c, lfs_block_t block, lfs_off_t off, void *buffer, lfs_size_t size);
 int go_bdfs_prog_page_cgo(const struct lfs_config* c, lfs_block_t block, lfs_off_t off, const void *buffer, lfs_size_t size);
@@ -83,3 +95,9 @@ int sync_block_nop(const struct lfs_config *c) {
 }
 */
 import "C"
+
+const FLASHFS_BLOCK_COUNT = 128
+const FLASHFS_SIZE_BYTES = PICO_ERASE_PAGE_SIZE * FLASHFS_BLOCK_COUNT
+
+// A start location counted back from the end of the device.
+const FLASHFS_BASE_ADDR uint32 = PICO_FLASH_BASE_ADDR + PICO_FLASH_SIZE_BYTES - FLASHFS_SIZE_BYTES

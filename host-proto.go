@@ -55,12 +55,6 @@ const PICO_FLASH_PAGE_PER_BLOCK = PICO_ERASE_PAGE_SIZE / PICO_PROG_PAGE_SIZE
 
 const PICO_UF2_FAMILYID uint32 = 0xe48bff56
 
-const FLASHFS_BLOCK_COUNT = 128
-const FLASHFS_SIZE_BYTES = PICO_ERASE_PAGE_SIZE * FLASHFS_BLOCK_COUNT
-
-// A start location counted back from the end of the device.
-const FLASHFS_BASE_ADDR uint32 = PICO_FLASH_BASE_ADDR + PICO_FLASH_SIZE_BYTES - FLASHFS_SIZE_BYTES
-
 func update_boot_count(fs *C.lfs_t) {
 	var lfsfile C.lfs_file_t
 	var pin runtime.Pinner

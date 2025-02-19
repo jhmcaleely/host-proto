@@ -7,6 +7,7 @@ package main
 #include "pico_flash_fs.h"
 
 int go_bdfs_read_cgo(const struct lfs_config* c, lfs_block_t block, lfs_off_t off, void *buffer, lfs_size_t size);
+int go_bdfs_prog_page_cgo(const struct lfs_config* c, lfs_block_t block, lfs_off_t off, const void *buffer, lfs_size_t size);
 int go_bdfs_erase_block_cgo(const struct lfs_config* c, lfs_block_t block);
 int sync_block_nop(const struct lfs_config *c);
 
@@ -14,7 +15,7 @@ int sync_block_nop(const struct lfs_config *c);
 struct lfs_config cfg = {
     // block device operations
     .read  = go_bdfs_read_cgo,
-    .prog  = bdfs_prog_page,
+    .prog  = go_bdfs_prog_page_cgo,
     .erase = go_bdfs_erase_block_cgo,
     .sync  = sync_block_nop,
 
@@ -39,12 +40,19 @@ struct block_device* bd;
 int open_flags = LFS_O_RDWR | LFS_O_CREAT;
 
 int go_bdfs_read(struct block_device* bd, uint32_t fs_base_address, lfs_block_t block, lfs_off_t off, void *buffer, lfs_size_t size);
+int go_bdfs_prog_page(struct block_device* bd, uint32_t fs_base_address, lfs_block_t block, lfs_off_t off, const void *buffer, lfs_size_t size);
 int go_bdfs_erase_block(struct block_device* bd, uint32_t fs_base_address, lfs_block_t block);
 
 int go_bdfs_read_cgo(const struct lfs_config* c, lfs_block_t block, lfs_off_t off, void *buffer, lfs_size_t size) {
 
 	struct flash_fs* fs = c->context;
     return go_bdfs_read(fs->device, fs->fs_flash_base_address, block, off, buffer, size);
+}
+
+int go_bdfs_prog_page_cgo(const struct lfs_config* c, lfs_block_t block, lfs_off_t off, const void *buffer, lfs_size_t size) {
+
+	struct flash_fs* fs = c->context;
+	return go_bdfs_prog_page(fs->device, fs->fs_flash_base_address, block, off, buffer, size);
 }
 
 int go_bdfs_erase_block_cgo(const struct lfs_config* c, lfs_block_t block) {

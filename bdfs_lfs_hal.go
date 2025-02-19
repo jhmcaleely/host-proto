@@ -3,8 +3,6 @@ package main
 /*
 #include "lfs.h"
 #include "block_device.h"
-
-extern struct lfs_config cfg;
 */
 import "C"
 import "unsafe"

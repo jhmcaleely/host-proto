@@ -4,12 +4,10 @@ package main
 #include "lfs.h"
 #include "block_device.h"
 
-void bdfs_create_hal_at(struct lfs_config* c, struct block_device* bd, uint32_t fs_base_address);
-void bdfs_destroy_hal(struct lfs_config* c);
+void init_fscfg(struct lfs_config* cfg, struct block_device* bd, uint32_t fs_base_address, uint32_t fs_block_count);
+void destroy_fscfg(struct lfs_config* cfg);
 
 int open_flags = LFS_O_RDWR | LFS_O_CREAT;
-
-extern struct lfs_config cfg;
 */
 import "C"
 
@@ -55,6 +53,13 @@ const PICO_FLASH_PAGE_PER_BLOCK = PICO_ERASE_PAGE_SIZE / PICO_PROG_PAGE_SIZE
 
 const PICO_UF2_FAMILYID uint32 = 0xe48bff56
 
+type BdFS struct {
+	FsConfig    C.struct_lfs_config
+	Device      *C.struct_block_device
+	BaseAddress uint32
+	BlockCount  uint32
+}
+
 func update_boot_count(fs *C.lfs_t) {
 	var lfsfile C.lfs_file_t
 	var pin runtime.Pinner
@@ -77,7 +82,7 @@ func update_boot_count(fs *C.lfs_t) {
 	fmt.Printf("boot count: %d\n", boot_count)
 }
 
-func mount_and_update_boot() {
+func mount_and_update_boot(fs *BdFS) {
 	var lfs C.lfs_t
 	var pin runtime.Pinner
 	defer pin.Unpin()
@@ -85,21 +90,14 @@ func mount_and_update_boot() {
 	lfsp := &lfs
 	pin.Pin(lfsp)
 
-	cfgp := &C.cfg
-
-	lfsres := C.lfs_mount(lfsp, cfgp)
+	lfsres := C.lfs_mount(lfsp, &fs.FsConfig)
 	if lfsres != 0 {
-		C.lfs_format(lfsp, cfgp)
-		C.lfs_mount(lfsp, cfgp)
+		C.lfs_format(lfsp, &fs.FsConfig)
+		C.lfs_mount(lfsp, &fs.FsConfig)
 	}
 	defer C.lfs_unmount(lfsp)
 
 	update_boot_count(lfsp)
-}
-
-type BdFS struct {
-	Device      *C.struct_block_device
-	BaseAddress uint32
 }
 
 func bdReadFromUF2(device BdFS, if2 io.Reader) {
@@ -168,16 +166,22 @@ func main() {
 	defer f.Close()
 
 	fs := BdFS{}
-	fs.BaseAddress = FLASHFS_BASE_ADDR
+	var pin runtime.Pinner
+	fsp := &fs.FsConfig
+	pin.Pin(fsp)
+	defer pin.Unpin()
+
 	fs.Device = C.bdCreate(C.uint32_t(PICO_FLASH_BASE_ADDR))
 	defer C.bdDestroy(fs.Device)
+	fs.BaseAddress = FLASHFS_BASE_ADDR
+	fs.BlockCount = FLASHFS_BLOCK_COUNT
 
-	C.bdfs_create_hal_at(&C.cfg, fs.Device, C.uint32_t(FLASHFS_BASE_ADDR))
-	defer C.bdfs_destroy_hal(&C.cfg)
+	C.init_fscfg(fsp, fs.Device, C.uint32_t(fs.BaseAddress), C.uint32_t(fs.BlockCount))
+	defer C.destroy_fscfg(fsp)
 
 	bdReadFromUF2(fs, f)
 
-	mount_and_update_boot()
+	mount_and_update_boot(&fs)
 
 	f.Seek(0, io.SeekStart)
 

@@ -3,28 +3,24 @@ package main
 /*
 #include "lfs.h"
 #include "bdfs_lfs.h"
-#include "pico_flash_device.h"
 
-int go_bdfs_read(struct block_device* bd, uint32_t fs_base_address, lfs_block_t block, lfs_off_t off, void *buffer, lfs_size_t size);
-int go_bdfs_prog_page(struct block_device* bd, uint32_t fs_base_address, lfs_block_t block, lfs_off_t off, const void *buffer, lfs_size_t size);
-int go_bdfs_erase_block(struct block_device* bd, uint32_t fs_base_address, lfs_block_t block);
+int go_bdfs_read(struct flash_fs* fs, lfs_block_t block, lfs_off_t off, void *buffer, lfs_size_t size);
+int go_bdfs_prog_page(struct flash_fs* fs, lfs_block_t block, lfs_off_t off, const void *buffer, lfs_size_t size);
+int go_bdfs_erase_block(struct flash_fs* fs, lfs_block_t block);
 
 int bdfs_read_cgo(const struct lfs_config* c, lfs_block_t block, lfs_off_t off, void *buffer, lfs_size_t size) {
 
-	struct flash_fs* fs = c->context;
-    return go_bdfs_read(fs->device, fs->fs_flash_base_address, block, off, buffer, size);
+    return go_bdfs_read(c->context, block, off, buffer, size);
 }
 
 int bdfs_prog_page_cgo(const struct lfs_config* c, lfs_block_t block, lfs_off_t off, const void *buffer, lfs_size_t size) {
 
-	struct flash_fs* fs = c->context;
-	return go_bdfs_prog_page(fs->device, fs->fs_flash_base_address, block, off, buffer, size);
+    return go_bdfs_prog_page(c->context, block, off, buffer, size);
 }
 
 int bdfs_erase_block_cgo(const struct lfs_config* c, lfs_block_t block) {
 
-	struct flash_fs* fs = c->context;
-    return go_bdfs_erase_block(fs->device, fs->fs_flash_base_address, block);
+    return go_bdfs_erase_block(c->context, block);
 }
 */
 import "C"

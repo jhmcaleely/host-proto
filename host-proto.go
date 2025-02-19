@@ -33,11 +33,6 @@ struct lfs_config cfg = {
 
 struct block_device* bd;
 
-void _bdInit() {
-   bd = bdCreate(PICO_FLASH_BASE_ADDR);
-   bdfs_create_hal_at(&cfg, bd, FLASHFS_BASE_ADDR);
-}
-
 void _bdDestroy() {
     bdfs_destroy_hal(&cfg);
     bdDestroy(bd);
@@ -81,14 +76,21 @@ const UF2_FLAG_FAMILY_ID uint32 = 0x00002000
 const UF2_FLAG_MD5_CHKSUM uint32 = 0x00004000
 const UF2_FLAG_EXTENSION_TAGS uint32 = 0x00008000
 
-const PICO_FLASH_SIZE_BYTES uint32 = (2 * 1024 * 1024)
-const PICO_ERASE_PAGE_SIZE uint32 = 4096
-const PICO_PROG_PAGE_SIZE uint32 = 256
+const PICO_FLASH_BASE_ADDR uint32 = 0x10000000
+const PICO_FLASH_SIZE_BYTES = (2 * 1024 * 1024)
+const PICO_ERASE_PAGE_SIZE = 4096
+const PICO_PROG_PAGE_SIZE = 256
 
 const PICO_DEVICE_BLOCK_COUNT = PICO_FLASH_SIZE_BYTES / PICO_ERASE_PAGE_SIZE
 const PICO_FLASH_PAGE_PER_BLOCK = PICO_ERASE_PAGE_SIZE / PICO_PROG_PAGE_SIZE
 
 const PICO_UF2_FAMILYID uint32 = 0xe48bff56
+
+const FLASHFS_BLOCK_COUNT = 128
+const FLASHFS_SIZE_BYTES = PICO_ERASE_PAGE_SIZE * FLASHFS_BLOCK_COUNT
+
+// A start location counted back from the end of the device.
+const FLASHFS_BASE_ADDR uint32 = PICO_FLASH_BASE_ADDR + PICO_FLASH_SIZE_BYTES - FLASHFS_SIZE_BYTES
 
 func update_boot_count(fs *C.lfs_t) {
 	var lfsfile C.lfs_file_t
@@ -198,7 +200,8 @@ func main() {
 	}
 	defer f.Close()
 
-	C._bdInit()
+	C.bd = C.bdCreate(C.uint32_t(PICO_FLASH_BASE_ADDR))
+	C.bdfs_create_hal_at(&C.cfg, C.bd, C.uint32_t(FLASHFS_BASE_ADDR))
 	defer C._bdDestroy()
 
 	bdReadFromUF2(f)

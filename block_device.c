@@ -6,7 +6,7 @@
 
 #include "block_device.h"
 
-#include "pico_flash_fs.h"
+#include "pico_flash_device.h"
 
 /*
  * A RAM block device that mimics a Pico Flash device. We can write this 

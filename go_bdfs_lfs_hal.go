@@ -55,8 +55,6 @@ void bdfs_destroy_hal(struct lfs_config* c) {
     c->context = NULL;
 }
 
-int open_flags = LFS_O_RDWR | LFS_O_CREAT;
-
 int go_bdfs_read(struct block_device* bd, uint32_t fs_base_address, lfs_block_t block, lfs_off_t off, void *buffer, lfs_size_t size);
 int go_bdfs_prog_page(struct block_device* bd, uint32_t fs_base_address, lfs_block_t block, lfs_off_t off, const void *buffer, lfs_size_t size);
 int go_bdfs_erase_block(struct block_device* bd, uint32_t fs_base_address, lfs_block_t block);

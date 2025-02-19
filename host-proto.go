@@ -32,10 +32,8 @@ struct lfs_config cfg = {
 };
 
 struct block_device* bd;
+int open_flags = LFS_O_RDWR | LFS_O_CREAT;
 
-int _lfs_file_open(lfs_t* lfs, lfs_file_t *file, const char *path) {
-	return lfs_file_open(lfs, file, path, LFS_O_RDWR | LFS_O_CREAT);
-}
 */
 import "C"
 
@@ -95,7 +93,7 @@ func update_boot_count(fs *C.lfs_t) {
 	filep := &lfsfile
 	pin.Pin(filep)
 
-	C._lfs_file_open(fs, filep, C.CString("boot_count"))
+	C.lfs_file_open(fs, filep, C.CString("boot_count"), C.open_flags)
 	defer C.lfs_file_close(fs, filep)
 
 	var boot_count C.uint32_t

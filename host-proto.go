@@ -134,6 +134,17 @@ func update_boot_count() {
 	fmt.Printf("boot count: %d\n", boot_count)
 }
 
+func mount_and_update_boot() {
+	lfsres := C._lfs_mount()
+	if lfsres != 0 {
+		C._lfs_format()
+		C._lfs_mount()
+	}
+	defer C._lfs_unmount()
+
+	update_boot_count()
+}
+
 func main() {
 	f, err := os.Open("littlefs-pico.uf2")
 	if err != nil {
@@ -146,14 +157,7 @@ func main() {
 
 	C.readuf2(C.CString("test.uf2"))
 
-	lfsres := C._lfs_mount()
-	if lfsres != 0 {
-		C._lfs_format()
-		C._lfs_mount()
-	}
-	defer C._lfs_unmount()
-
-	update_boot_count()
+	mount_and_update_boot()
 
 	C.writeuf2(C.CString("test.uf2"))
 

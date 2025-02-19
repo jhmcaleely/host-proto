@@ -46,15 +46,6 @@ void _bdDestroy() {
 int _lfs_file_open(lfs_t* lfs, lfs_file_t *file, const char *path) {
 	return lfs_file_open(lfs, file, path, LFS_O_RDWR | LFS_O_CREAT);
 }
-
-void writeuf2(const char * input) {
-    FILE* iofile = fopen(input, "wb");
-    if (iofile) {
-        bdWriteToUF2(bd, iofile);
-
-        fclose(iofile);
-    }
-}
 */
 import "C"
 
@@ -89,6 +80,15 @@ const UF2_FLAG_FILECONTAINER uint32 = 0x00001000
 const UF2_FLAG_FAMILY_ID uint32 = 0x00002000
 const UF2_FLAG_MD5_CHKSUM uint32 = 0x00004000
 const UF2_FLAG_EXTENSION_TAGS uint32 = 0x00008000
+
+const PICO_FLASH_SIZE_BYTES uint32 = (2 * 1024 * 1024)
+const PICO_ERASE_PAGE_SIZE uint32 = 4096
+const PICO_PROG_PAGE_SIZE uint32 = 256
+
+const PICO_DEVICE_BLOCK_COUNT = PICO_FLASH_SIZE_BYTES / PICO_ERASE_PAGE_SIZE
+const PICO_FLASH_PAGE_PER_BLOCK = PICO_ERASE_PAGE_SIZE / PICO_PROG_PAGE_SIZE
+
+const PICO_UF2_FAMILYID uint32 = 0xe48bff56
 
 func update_boot_count(fs *C.lfs_t) {
 	var lfsfile C.lfs_file_t
@@ -157,8 +157,42 @@ func bdReadFromUF2(if2 io.Reader) {
 	}
 }
 
+func bdWriteToUF2(of io.Writer) {
+	pageTotal := uint32(C.bdCountPages(C.bd))
+	pageCursor := uint32(0)
+
+	for b := uint32(0); b < PICO_DEVICE_BLOCK_COUNT; b++ {
+		for p := uint32(0); p < PICO_FLASH_PAGE_PER_BLOCK; p++ {
+			if C.bdPagePresent(C.bd, C.uint32_t(b), C.uint32_t(p)) {
+				ub := Uf2Frame{}
+
+				ub.MagicStart0 = UF2_MAGIC_START0
+				ub.MagicStart1 = UF2_MAGIC_START1
+				ub.Flags = UF2_FLAG_FAMILY_ID
+				ub.TargetAddr = uint32(C.bdTargetAddress(C.bd, C.uint32_t(b), C.uint32_t(p)))
+				ub.PayloadSize = PICO_PROG_PAGE_SIZE
+				ub.BlockNo = pageCursor
+				ub.NumBlocks = pageTotal
+
+				// documented as FamilyID, Filesize or 0.
+				ub.Reserved = PICO_UF2_FAMILYID
+
+				C.bdRead(C.bd, C.uint32_t(ub.TargetAddr), (*C.uint8_t)(unsafe.Pointer(&ub.Data[0])), C.size_t(PICO_PROG_PAGE_SIZE))
+
+				ub.MagicEnd = UF2_MAGIC_END
+
+				fmt.Printf("uf2page: %08x, %d\n", ub.TargetAddr, ub.PayloadSize)
+
+				binary.Write(of, binary.LittleEndian, &ub)
+
+				pageCursor++
+			}
+		}
+	}
+}
+
 func main() {
-	f, err := os.Open("test.uf2")
+	f, err := os.OpenFile("test.uf2", os.O_RDWR|os.O_CREATE, 0666)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -171,6 +205,7 @@ func main() {
 
 	mount_and_update_boot()
 
-	C.writeuf2(C.CString("test.uf2"))
+	f.Seek(0, io.SeekStart)
 
+	bdWriteToUF2(f)
 }

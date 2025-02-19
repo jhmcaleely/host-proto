@@ -22,8 +22,10 @@ void bdEraseBlock(struct block_device* bd, uint32_t address);
 void bdWrite(struct block_device* bd, uint32_t address, const uint8_t* data, size_t size);
 void bdRead(struct block_device* bd, uint32_t address, uint8_t* buffer, size_t size);
 
-void bdWriteToUF2(struct block_device* bd, FILE* output);
 bool bdIsBlockStart(struct block_device* bd, uint32_t targetAddr);
+int bdCountPages(struct block_device* bd);
+bool bdPagePresent(struct block_device* bd, uint32_t block, uint32_t page);
+uint32_t bdTargetAddress(struct block_device* bd, uint32_t block, uint32_t page);
 
 
 #endif

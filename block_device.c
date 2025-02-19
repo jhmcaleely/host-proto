@@ -7,7 +7,6 @@
 #include "block_device.h"
 
 #include "pico_flash_fs.h"
-#include "uf2.h"
 
 /*
  * A RAM block device that mimics a Pico Flash device. We can write this 
@@ -132,7 +131,7 @@ void bdRead(struct block_device* bd, uint32_t address, uint8_t* buffer, size_t s
     _bdRead(bd, ad.block, ad.page, ad.offset, buffer, size);
 }
 
-int countPages(struct block_device* bd) {
+int bdCountPages(struct block_device* bd) {
     int count = 0;
 
     for (int b = 0; b < PICO_DEVICE_BLOCK_COUNT; b++) {
@@ -146,42 +145,14 @@ int countPages(struct block_device* bd) {
     return count;
 }
 
-void bdWriteToUF2(struct block_device* bd, FILE* output) {
-    int pageTotal = countPages(bd);
-    int pageCursor = 0;
-
-    for (int b = 0; b < PICO_DEVICE_BLOCK_COUNT; b++) {
-        for (int p = 0; p < PICO_FLASH_PAGE_PER_BLOCK; p++) {
-            if (bd->page_present[b][p]) {
-                UF2_Block ub;
-                ub.magicStart0 = UF2_MAGIC_START0;
-                ub.magicStart1 = UF2_MAGIC_START1;
-                ub.flags = UF2_FLAG_FAMILY_ID;
-                ub.targetAddr = bd->base_address + bdStorageOffset(b, p);
-                ub.payloadSize = PICO_PROG_PAGE_SIZE;
-                ub.blockNo = pageCursor;
-                ub.numBlocks = pageTotal;
-                
-                // documented as FamilyID, Filesize or 0.
-                ub.reserved = PICO_UF2_FAMILYID;
-
-                bdRead(bd, ub.targetAddr, ub.data, PICO_PROG_PAGE_SIZE);
-
-                // Zero fill the undefined space
-                memset(&ub.data[PICO_PROG_PAGE_SIZE], 0, sizeof(ub.data) - PICO_PROG_PAGE_SIZE);
-
-                ub.magicEnd = UF2_MAGIC_END;
-                
-                printf("uf2page: %08x, %d\n", ub.targetAddr, ub.payloadSize);
-
-                fwrite(&ub, sizeof(ub), 1, output);
-
-                pageCursor++;
-            }
-        }
-    }
-}
-
 bool bdIsBlockStart(struct block_device* bd, uint32_t targetAddr) {
 	return (((targetAddr - bd->base_address) % PICO_ERASE_PAGE_SIZE) == 0);
+}
+
+bool bdPagePresent(struct block_device* bd, uint32_t block, uint32_t page) {
+    return bd->page_present[block][page];
+}
+
+uint32_t bdTargetAddress(struct block_device* bd, uint32_t block, uint32_t page) {
+    return bd->base_address + bdStorageOffset(block, page);
 }

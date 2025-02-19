@@ -7,10 +7,7 @@ package main
 extern struct lfs_config cfg;
 */
 import "C"
-
-import (
-	"unsafe"
-)
+import "unsafe"
 
 const LFS_ERR_OK C.int = 0
 

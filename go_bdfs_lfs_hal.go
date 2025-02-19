@@ -7,6 +7,7 @@ package main
 #include "pico_flash_fs.h"
 
 int go_bdfs_read_cgo(const struct lfs_config* c, lfs_block_t block, lfs_off_t off, void *buffer, lfs_size_t size);
+int sync_block_nop(const struct lfs_config *c);
 
 // configuration of the filesystem is provided by this struct
 struct lfs_config cfg = {
@@ -14,7 +15,7 @@ struct lfs_config cfg = {
     .read  = go_bdfs_read_cgo,
     .prog  = bdfs_prog_page,
     .erase = bdfs_erase_block,
-    .sync  = bdfs_sync_block,
+    .sync  = sync_block_nop,
 
     // block device configuration
 
@@ -42,6 +43,11 @@ int go_bdfs_read_cgo(const struct lfs_config* c, lfs_block_t block, lfs_off_t of
 
 	struct flash_fs* fs = c->context;
     return go_bdfs_read(fs->device, fs->fs_flash_base_address, block, off, buffer, size);
+}
+
+int sync_block_nop(const struct lfs_config *c) {
+
+    return LFS_ERR_OK;
 }
 */
 import "C"

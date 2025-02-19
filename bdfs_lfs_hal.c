@@ -49,8 +49,3 @@ int bdfs_erase_block(const struct lfs_config *c, lfs_block_t block) {
     
     return LFS_ERR_OK;
 }
-
-int bdfs_sync_block(const struct lfs_config *c) {
-
-    return LFS_ERR_OK;
-}

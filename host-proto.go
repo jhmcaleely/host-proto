@@ -81,9 +81,14 @@ type Uf2Frame struct {
 	MagicEnd    uint32
 }
 
-const UF2_MAGIC_START0 = 0x0A324655
-const UF2_MAGIC_START1 = 0x9E5D5157
-const UF2_MAGIC_END = 0x0AB16F30
+const UF2_MAGIC_START0 uint32 = 0x0A324655
+const UF2_MAGIC_START1 uint32 = 0x9E5D5157
+const UF2_MAGIC_END uint32 = 0x0AB16F30
+const UF2_FLAG_NOFLASH uint32 = 0x00000001
+const UF2_FLAG_FILECONTAINER uint32 = 0x00001000
+const UF2_FLAG_FAMILY_ID uint32 = 0x00002000
+const UF2_FLAG_MD5_CHKSUM uint32 = 0x00004000
+const UF2_FLAG_EXTENSION_TAGS uint32 = 0x00008000
 
 func update_boot_count(fs *C.lfs_t) {
 	var lfsfile C.lfs_file_t

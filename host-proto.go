@@ -33,11 +33,6 @@ struct lfs_config cfg = {
 
 struct block_device* bd;
 
-void _bdDestroy() {
-    bdfs_destroy_hal(&cfg);
-    bdDestroy(bd);
-}
-
 int _lfs_file_open(lfs_t* lfs, lfs_file_t *file, const char *path) {
 	return lfs_file_open(lfs, file, path, LFS_O_RDWR | LFS_O_CREAT);
 }
@@ -201,8 +196,10 @@ func main() {
 	defer f.Close()
 
 	C.bd = C.bdCreate(C.uint32_t(PICO_FLASH_BASE_ADDR))
+	defer C.bdDestroy(C.bd)
+
 	C.bdfs_create_hal_at(&C.cfg, C.bd, C.uint32_t(FLASHFS_BASE_ADDR))
-	defer C._bdDestroy()
+	defer C.bdfs_destroy_hal(&C.cfg)
 
 	bdReadFromUF2(f)
 

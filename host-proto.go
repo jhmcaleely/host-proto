@@ -43,14 +43,6 @@ void _bdDestroy() {
     bdDestroy(bd);
 }
 
-int _lfs_mount(lfs_t* lfs) {
-	return lfs_mount(lfs, &cfg);
-}
-
-int _lfs_format(lfs_t* lfs) {
-	return lfs_format(lfs, &cfg);
-}
-
 int _lfs_file_open(lfs_t* lfs, lfs_file_t *file, const char *path) {
 	return lfs_file_open(lfs, file, path, LFS_O_RDWR | LFS_O_CREAT);
 }
@@ -127,10 +119,12 @@ func mount_and_update_boot() {
 	lfsp := &lfs
 	pin.Pin(lfsp)
 
-	lfsres := C._lfs_mount(lfsp)
+	cfgp := &C.cfg
+
+	lfsres := C.lfs_mount(lfsp, cfgp)
 	if lfsres != 0 {
-		C._lfs_format(lfsp)
-		C._lfs_mount(lfsp)
+		C.lfs_format(lfsp, cfgp)
+		C.lfs_mount(lfsp, cfgp)
 	}
 	defer C.lfs_unmount(lfsp)
 

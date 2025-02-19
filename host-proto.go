@@ -2,6 +2,7 @@ package main
 
 /*
 #include "lfs.h"
+#include "bdfs_lfs.h"
 #include "block_device.h"
 
 void init_fscfg(struct lfs_config* cfg, struct block_device* bd, uint32_t fs_base_address, uint32_t fs_block_count);

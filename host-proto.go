@@ -47,14 +47,6 @@ int _lfs_file_open(lfs_t* lfs, lfs_file_t *file, const char *path) {
 	return lfs_file_open(lfs, file, path, LFS_O_RDWR | LFS_O_CREAT);
 }
 
-void readuf2(const char * input) {
-    FILE* iofile = fopen(input, "rb");
-    if (iofile) {
-        bdReadFromUF2(bd, iofile);
-        fclose(iofile);
-    }
-}
-
 void writeuf2(const char * input) {
     FILE* iofile = fopen(input, "wb");
     if (iofile) {
@@ -88,6 +80,10 @@ type Uf2Frame struct {
 	Data        [476]byte
 	MagicEnd    uint32
 }
+
+const UF2_MAGIC_START0 = 0x0A324655
+const UF2_MAGIC_START1 = 0x9E5D5157
+const UF2_MAGIC_END = 0x0AB16F30
 
 func update_boot_count(fs *C.lfs_t) {
 	var lfsfile C.lfs_file_t
@@ -131,8 +127,33 @@ func mount_and_update_boot() {
 	update_boot_count(lfsp)
 }
 
+func bdReadFromUF2(if2 io.Reader) {
+	bd := C.bd
+
+	ufn := Uf2Frame{}
+	for binary.Read(if2, binary.LittleEndian, &ufn) != io.EOF {
+
+		if ufn.MagicStart0 != UF2_MAGIC_START0 {
+			panic("bad start0")
+		}
+		if ufn.MagicStart1 != UF2_MAGIC_START1 {
+			panic("bad start1")
+		}
+		if ufn.MagicEnd != UF2_MAGIC_END {
+			panic("bad end")
+		}
+
+		// erase a block before writing any pages to it.
+		if C.bdIsBlockStart(bd, C.uint32_t(ufn.TargetAddr)) {
+			C.bdEraseBlock(bd, C.uint32_t(ufn.TargetAddr))
+		}
+
+		C.bdWrite(bd, C.uint32_t(ufn.TargetAddr), (*C.uint8_t)(unsafe.Pointer(&ufn.Data[0])), C.size_t(ufn.PayloadSize))
+	}
+}
+
 func main() {
-	f, err := os.Open("littlefs-pico.uf2")
+	f, err := os.Open("test.uf2")
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -141,57 +162,10 @@ func main() {
 	C._bdInit()
 	defer C._bdDestroy()
 
-	C.readuf2(C.CString("test.uf2"))
+	bdReadFromUF2(f)
 
 	mount_and_update_boot()
 
 	C.writeuf2(C.CString("test.uf2"))
-
-	uf := Uf2Frame{}
-	err = binary.Read(f, binary.LittleEndian, &uf)
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	if2, err := os.Open("fs.uf2")
-	if err != nil {
-		log.Fatalln(err)
-	}
-	defer if2.Close()
-
-	ufCount := uf.NumBlocks
-
-	ufn := Uf2Frame{}
-	err = binary.Read(if2, binary.LittleEndian, &ufn)
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	ufnCount := ufn.NumBlocks
-
-	ofCount := ufCount + ufnCount
-
-	if2.Seek(0, io.SeekStart)
-	f.Seek(0, io.SeekStart)
-
-	of, err := os.Create("testout.uf2")
-	if err != nil {
-		log.Fatalln(err)
-	}
-	defer of.Close()
-
-	for u := range ufCount {
-		binary.Read(f, binary.LittleEndian, &uf)
-		uf.BlockNo = u
-		uf.NumBlocks = ofCount
-		binary.Write(of, binary.LittleEndian, &uf)
-	}
-
-	for u := ufCount; u < ofCount; u++ {
-		binary.Read(if2, binary.LittleEndian, &uf)
-		uf.BlockNo = u
-		uf.NumBlocks = ofCount
-		binary.Write(of, binary.LittleEndian, &uf)
-	}
 
 }

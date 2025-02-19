@@ -182,18 +182,6 @@ void bdWriteToUF2(struct block_device* bd, FILE* output) {
     }
 }
 
-void bdReadFromUF2(struct block_device* bd, FILE* input) {
-
-    UF2_Block ub;
-    while (fread(&ub, sizeof(UF2_Block), 1, input)) {
-        assert(ub.magicStart0 == UF2_MAGIC_START0);
-        assert(ub.magicStart1 == UF2_MAGIC_START1);
-        assert(ub.magicEnd == UF2_MAGIC_END);
-        // erase a block before writing any pages to it.
-        if (((ub.targetAddr - bd->base_address) % PICO_ERASE_PAGE_SIZE) == 0) {
-            bdEraseBlock(bd, ub.targetAddr);
-        }
-
-        bdWrite(bd, ub.targetAddr, ub.data, ub.payloadSize);
-    }
+bool bdIsBlockStart(struct block_device* bd, uint32_t targetAddr) {
+	return (((targetAddr - bd->base_address) % PICO_ERASE_PAGE_SIZE) == 0);
 }

@@ -31,8 +31,6 @@ struct lfs_config cfg = {
     .block_cycles = 500,
 };
 
-lfs_t lfs;
-
 struct block_device* bd;
 
 void _bdInit() {
@@ -45,36 +43,16 @@ void _bdDestroy() {
     bdDestroy(bd);
 }
 
-int _lfs_mount() {
-	return lfs_mount(&lfs, &cfg);
+int _lfs_mount(lfs_t* lfs) {
+	return lfs_mount(lfs, &cfg);
 }
 
-int _lfs_format() {
-	return lfs_format(&lfs, &cfg);
+int _lfs_format(lfs_t* lfs) {
+	return lfs_format(lfs, &cfg);
 }
 
-void _lfs_unmount() {
-	lfs_unmount(&lfs);
-}
-
-int _lfs_file_open(lfs_file_t *file, const char *path) {
-	return lfs_file_open(&lfs, file, path, LFS_O_RDWR | LFS_O_CREAT);
-}
-
-int _lfs_file_close(lfs_file_t *file) {
-	return lfs_file_close(&lfs, file);
-}
-
-int _lfs_file_read(lfs_file_t *file, void *buffer, lfs_size_t size) {
-	return lfs_file_read(&lfs, file, buffer, size);
-}
-
-int _lfs_file_rewind(lfs_file_t *file) {
-	return lfs_file_rewind(&lfs, file);
-}
-
-int _lfs_file_write(lfs_file_t *file, const void *buffer, lfs_size_t size) {
-	return lfs_file_write(&lfs, file, buffer, size);
+int _lfs_file_open(lfs_t* lfs, lfs_file_t *file, const char *path) {
+	return lfs_file_open(lfs, file, path, LFS_O_RDWR | LFS_O_CREAT);
 }
 
 void readuf2(const char * input) {
@@ -102,6 +80,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"runtime"
 	"unsafe"
 )
 
@@ -118,31 +97,44 @@ type Uf2Frame struct {
 	MagicEnd    uint32
 }
 
-func update_boot_count() {
+func update_boot_count(fs *C.lfs_t) {
 	var lfsfile C.lfs_file_t
-	C._lfs_file_open(&lfsfile, C.CString("boot_count"))
-	defer C._lfs_file_close(&lfsfile)
+	var pin runtime.Pinner
+	defer pin.Unpin()
+
+	filep := &lfsfile
+	pin.Pin(filep)
+
+	C._lfs_file_open(fs, filep, C.CString("boot_count"))
+	defer C.lfs_file_close(fs, filep)
 
 	var boot_count C.uint32_t
-	C._lfs_file_read(&lfsfile, unsafe.Pointer(&boot_count), 4)
+	C.lfs_file_read(fs, filep, unsafe.Pointer(&boot_count), 4)
 	// update boot count
 	boot_count += 1
-	C._lfs_file_rewind(&lfsfile)
+	C.lfs_file_rewind(fs, filep)
 
-	C._lfs_file_write(&lfsfile, unsafe.Pointer(&boot_count), 4)
+	C.lfs_file_write(fs, filep, unsafe.Pointer(&boot_count), 4)
 
 	fmt.Printf("boot count: %d\n", boot_count)
 }
 
 func mount_and_update_boot() {
-	lfsres := C._lfs_mount()
-	if lfsres != 0 {
-		C._lfs_format()
-		C._lfs_mount()
-	}
-	defer C._lfs_unmount()
+	var lfs C.lfs_t
+	var pin runtime.Pinner
+	defer pin.Unpin()
 
-	update_boot_count()
+	lfsp := &lfs
+	pin.Pin(lfsp)
+
+	lfsres := C._lfs_mount(lfsp)
+	if lfsres != 0 {
+		C._lfs_format(lfsp)
+		C._lfs_mount(lfsp)
+	}
+	defer C.lfs_unmount(lfsp)
+
+	update_boot_count(lfsp)
 }
 
 func main() {

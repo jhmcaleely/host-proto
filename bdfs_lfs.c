@@ -8,7 +8,7 @@ int bdfs_erase_block_cgo(const struct lfs_config* c, lfs_block_t block);
 static int sync_block_nop(const struct lfs_config *c);
 
 // configuration of the filesystem is provided by this function
-void init_fscfg(struct lfs_config* cfg, struct block_device* bd, uint32_t fs_base_address, uint32_t fs_block_count) {
+void init_fscfg(struct lfs_config* cfg, struct flash_fs* fs, struct block_device* bd, uint32_t fs_base_address, uint32_t fs_block_count) {
 
     cfg->read = bdfs_read_cgo;
     cfg->prog  = bdfs_prog_page_cgo;
@@ -30,15 +30,13 @@ void init_fscfg(struct lfs_config* cfg, struct block_device* bd, uint32_t fs_bas
     cfg->lookahead_size = 16;
     cfg->block_cycles = 500;
 
-    struct flash_fs* fs = malloc(sizeof(struct flash_fs));
     fs->device = bd;
     fs->fs_flash_base_address = fs_base_address;
 
     cfg->context = fs;
 }
 
-void destroy_fscfg(struct lfs_config* cfg) {
-    free(cfg->context);
+void destroy_fscfg(struct lfs_config* cfg, struct flash_fs* fs) {
     cfg->context = NULL;
 }
 

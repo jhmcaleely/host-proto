@@ -5,9 +5,6 @@ package main
 #include "bdfs_lfs.h"
 #include "block_device.h"
 
-void init_fscfg(struct lfs_config* cfg, struct block_device* bd, uint32_t fs_base_address, uint32_t fs_block_count);
-void destroy_fscfg(struct lfs_config* cfg);
-
 int open_flags = LFS_O_RDWR | LFS_O_CREAT;
 */
 import "C"
@@ -56,6 +53,7 @@ const PICO_UF2_FAMILYID uint32 = 0xe48bff56
 
 type BdFS struct {
 	FsConfig    C.struct_lfs_config
+	Fs          C.struct_flash_fs
 	Device      *C.struct_block_device
 	BaseAddress uint32
 	BlockCount  uint32
@@ -168,17 +166,20 @@ func main() {
 
 	fs := BdFS{}
 	var pin runtime.Pinner
-	fsp := &fs.FsConfig
-	pin.Pin(fsp)
+	fscp := &fs.FsConfig
+	pin.Pin(fscp)
 	defer pin.Unpin()
+
+	fsp := &fs.Fs
+	pin.Pin(fsp)
 
 	fs.Device = C.bdCreate(C.uint32_t(PICO_FLASH_BASE_ADDR))
 	defer C.bdDestroy(fs.Device)
 	fs.BaseAddress = FLASHFS_BASE_ADDR
 	fs.BlockCount = FLASHFS_BLOCK_COUNT
 
-	C.init_fscfg(fsp, fs.Device, C.uint32_t(fs.BaseAddress), C.uint32_t(fs.BlockCount))
-	defer C.destroy_fscfg(fsp)
+	C.init_fscfg(fscp, fsp, fs.Device, C.uint32_t(fs.BaseAddress), C.uint32_t(fs.BlockCount))
+	defer C.destroy_fscfg(fscp, fsp)
 
 	bdReadFromUF2(fs, f)
 

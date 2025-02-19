@@ -53,7 +53,6 @@ int go_bdfs_erase_block_cgo(const struct lfs_config* c, lfs_block_t block) {
     return go_bdfs_erase_block(fs->device, fs->fs_flash_base_address, block);
 }
 
-
 int sync_block_nop(const struct lfs_config *c) {
 
     return LFS_ERR_OK;

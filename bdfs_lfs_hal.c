@@ -4,11 +4,6 @@
 #include "bdfs_lfs_hal.h"
 #include "pico_flash_fs.h"
 
-struct flash_fs {
-    struct block_device* device;
-    uint32_t fs_flash_base_address;
-};
-
 uint32_t fsAddressForBlock(struct flash_fs* fs, uint32_t block, uint32_t off) {
 
     uint32_t byte_offset = block * PICO_ERASE_PAGE_SIZE + off;
@@ -29,17 +24,6 @@ void bdfs_destroy_hal(struct lfs_config* c) {
 
     free(c->context);
     c->context = NULL;
-}
-
-int bdfs_read(const struct lfs_config *c, lfs_block_t block, lfs_off_t off, void *buffer, lfs_size_t size) {
-
-    struct flash_fs* fs = c->context;
-
-    uint32_t device_address = fsAddressForBlock(fs, block, off);
-
-    bdRead(fs->device, device_address, buffer, size);
-
-    return LFS_ERR_OK; 
 }
 
 int bdfs_prog_page(const struct lfs_config *c, lfs_block_t block, lfs_off_t off, const void *buffer, lfs_size_t size) {

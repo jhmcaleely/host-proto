@@ -2,37 +2,12 @@ package main
 
 /*
 #include "lfs.h"
-#include "bdfs_lfs_hal.h"
 #include "block_device.h"
-#include "pico_flash_fs.h"
+#include "bdfs_lfs_hal.h"
 
-// configuration of the filesystem is provided by this struct
-struct lfs_config cfg = {
-    // block device operations
-    .read  = bdfs_read,
-    .prog  = bdfs_prog_page,
-    .erase = bdfs_erase_block,
-    .sync  = bdfs_sync_block,
-
-    // block device configuration
-
-    .read_size = 1,
-
-    .prog_size = PICO_PROG_PAGE_SIZE,
-    .block_size = PICO_ERASE_PAGE_SIZE,
-
-    // the number of blocks we use for a flash fs.
-    .block_count = FLASHFS_BLOCK_COUNT,
-
-    // cache needs to be a multiple of the programming page size.
-    .cache_size = PICO_PROG_PAGE_SIZE * 1,
-
-    .lookahead_size = 16,
-    .block_cycles = 500,
-};
-
-struct block_device* bd;
-int open_flags = LFS_O_RDWR | LFS_O_CREAT;
+extern struct block_device* bd;
+extern int open_flags;
+extern struct lfs_config cfg;
 
 */
 import "C"
@@ -46,6 +21,25 @@ import (
 	"runtime"
 	"unsafe"
 )
+
+const LFS_ERR_OK C.int = 0
+
+func fsAddressForBlock(fs_base_address uint32, block, off uint32) uint32 {
+
+	byte_offset := block*PICO_ERASE_PAGE_SIZE + off
+
+	return fs_base_address + byte_offset
+}
+
+//export go_bdfs_read
+func go_bdfs_read(device *C.struct_block_device, fs_flash_base_address C.uint32_t, block C.lfs_block_t, off C.lfs_off_t, buffer *C.void, size C.lfs_size_t) C.int {
+
+	device_address := fsAddressForBlock(uint32(fs_flash_base_address), uint32(block), uint32(off))
+
+	C.bdRead(device, C.uint32_t(device_address), (*C.uint8_t)(unsafe.Pointer(buffer)), C.size_t(size))
+
+	return LFS_ERR_OK
+}
 
 type Uf2Frame struct {
 	MagicStart0 uint32

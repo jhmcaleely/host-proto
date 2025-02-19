@@ -41,6 +41,16 @@ func go_bdfs_read(device *C.struct_block_device, fs_flash_base_address C.uint32_
 	return LFS_ERR_OK
 }
 
+//export go_bdfs_erase_block
+func go_bdfs_erase_block(device *C.struct_block_device, fs_flash_base_address C.uint32_t, block C.lfs_block_t) C.int {
+
+	device_address := fsAddressForBlock(uint32(fs_flash_base_address), uint32(block), uint32(0))
+
+	C.bdEraseBlock(device, C.uint32_t(device_address))
+
+	return LFS_ERR_OK
+}
+
 type Uf2Frame struct {
 	MagicStart0 uint32
 	MagicStart1 uint32

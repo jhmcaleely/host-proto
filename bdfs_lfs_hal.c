@@ -39,13 +39,3 @@ int bdfs_prog_page(const struct lfs_config *c, lfs_block_t block, lfs_off_t off,
     return LFS_ERR_OK;
 }
 
-int bdfs_erase_block(const struct lfs_config *c, lfs_block_t block) {
-
-    struct flash_fs* fs = c->context;
-
-    uint32_t device_address = fsAddressForBlock(fs, block, 0);
-
-    bdEraseBlock(fs->device, device_address);
-    
-    return LFS_ERR_OK;
-}

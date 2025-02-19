@@ -7,6 +7,7 @@ package main
 #include "pico_flash_fs.h"
 
 int go_bdfs_read_cgo(const struct lfs_config* c, lfs_block_t block, lfs_off_t off, void *buffer, lfs_size_t size);
+int go_bdfs_erase_block_cgo(const struct lfs_config* c, lfs_block_t block);
 int sync_block_nop(const struct lfs_config *c);
 
 // configuration of the filesystem is provided by this struct
@@ -14,7 +15,7 @@ struct lfs_config cfg = {
     // block device operations
     .read  = go_bdfs_read_cgo,
     .prog  = bdfs_prog_page,
-    .erase = bdfs_erase_block,
+    .erase = go_bdfs_erase_block_cgo,
     .sync  = sync_block_nop,
 
     // block device configuration
@@ -38,12 +39,20 @@ struct block_device* bd;
 int open_flags = LFS_O_RDWR | LFS_O_CREAT;
 
 int go_bdfs_read(struct block_device* bd, uint32_t fs_base_address, lfs_block_t block, lfs_off_t off, void *buffer, lfs_size_t size);
+int go_bdfs_erase_block(struct block_device* bd, uint32_t fs_base_address, lfs_block_t block);
 
 int go_bdfs_read_cgo(const struct lfs_config* c, lfs_block_t block, lfs_off_t off, void *buffer, lfs_size_t size) {
 
 	struct flash_fs* fs = c->context;
     return go_bdfs_read(fs->device, fs->fs_flash_base_address, block, off, buffer, size);
 }
+
+int go_bdfs_erase_block_cgo(const struct lfs_config* c, lfs_block_t block) {
+
+	struct flash_fs* fs = c->context;
+    return go_bdfs_erase_block(fs->device, fs->fs_flash_base_address, block);
+}
+
 
 int sync_block_nop(const struct lfs_config *c) {
 

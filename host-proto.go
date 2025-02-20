@@ -70,6 +70,13 @@ func newBdFS(device *C.struct_block_device) *BdFS {
 	return &cfg
 }
 
+func (fs *BdFS) init(baseAddr, blockCount uint32) error {
+
+	C.init_fscfg(fs.LfsP, fs.FsP, fs.Device, C.uint32_t(baseAddr), C.uint32_t(blockCount))
+
+	return nil
+}
+
 func (fs *BdFS) Close() error {
 	C.destroy_fscfg(fs.LfsP, fs.FsP)
 	return nil
@@ -191,7 +198,7 @@ func main() {
 
 	defer fs.Close()
 
-	C.init_fscfg(fs.LfsP, fs.FsP, fs.Device, C.uint32_t(FLASHFS_BASE_ADDR), C.uint32_t(FLASHFS_BLOCK_COUNT))
+	fs.init(FLASHFS_BASE_ADDR, FLASHFS_BLOCK_COUNT)
 
 	bdReadFromUF2(fs, f)
 

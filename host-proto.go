@@ -10,6 +10,7 @@ int open_flags = LFS_O_RDWR | LFS_O_CREAT;
 import "C"
 
 import (
+	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -96,8 +97,8 @@ func mount_and_update_boot(fs *BdFS) {
 	update_boot_count(lfsp)
 }
 
-func main() {
-	f, err := os.OpenFile("test.uf2", os.O_RDWR|os.O_CREATE, 0666)
+func bootCountDemo(fsFilename string) {
+	f, err := os.OpenFile(fsFilename, os.O_RDWR|os.O_CREATE, 0666)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -123,4 +124,24 @@ func main() {
 	f.Seek(0, io.SeekStart)
 
 	bdWriteToUF2(device, f)
+}
+
+func main() {
+
+	bootCountDemoCmd := flag.NewFlagSet("bootcount", flag.ExitOnError)
+	bootCountFS := bootCountDemoCmd.String("fs", "test.uf2", "mount and increment boot_count on fs")
+
+	if len(os.Args) < 2 {
+		fmt.Println("expected command")
+		os.Exit(1)
+	}
+
+	switch os.Args[1] {
+	case "bootcount":
+		bootCountDemoCmd.Parse(os.Args[2:])
+		bootCountDemo(*bootCountFS)
+	default:
+		fmt.Println("unknown command")
+		os.Exit(1)
+	}
 }

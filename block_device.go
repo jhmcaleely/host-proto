@@ -37,6 +37,20 @@ const UF2_FLAG_EXTENSION_TAGS uint32 = 0x00008000
 const PICO_DEVICE_BLOCK_COUNT = PICO_FLASH_SIZE_BYTES / PICO_ERASE_PAGE_SIZE
 const PICO_FLASH_PAGE_PER_BLOCK = PICO_ERASE_PAGE_SIZE / PICO_PROG_PAGE_SIZE
 
+func bdCountPages(bd *C.struct_block_device) int {
+	count := 0
+
+	for b := C.uint32_t(0); b < PICO_DEVICE_BLOCK_COUNT; b++ {
+		for p := C.uint32_t(0); p < PICO_FLASH_PAGE_PER_BLOCK; p++ {
+			if C.bdPagePresent(bd, b, p) {
+				count++
+			}
+		}
+	}
+
+	return count
+}
+
 func bdReadFromUF2(device *C.struct_block_device, if2 io.Reader) {
 
 	ufn := Uf2Frame{}
@@ -62,7 +76,7 @@ func bdReadFromUF2(device *C.struct_block_device, if2 io.Reader) {
 }
 
 func bdWriteToUF2(device *C.struct_block_device, of io.Writer) {
-	pageTotal := uint32(C.bdCountPages(device))
+	pageTotal := uint32(bdCountPages(device))
 	pageCursor := uint32(0)
 
 	for b := uint32(0); b < PICO_DEVICE_BLOCK_COUNT; b++ {

@@ -16,7 +16,6 @@ void bdWrite(struct block_device* bd, uint32_t address, const uint8_t* data, siz
 void bdRead(struct block_device* bd, uint32_t address, uint8_t* buffer, size_t size);
 
 bool bdIsBlockStart(struct block_device* bd, uint32_t targetAddr);
-int bdCountPages(struct block_device* bd);
 bool bdPagePresent(struct block_device* bd, uint32_t block, uint32_t page);
 uint32_t bdTargetAddress(struct block_device* bd, uint32_t block, uint32_t page);
 

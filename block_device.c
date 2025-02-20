@@ -130,20 +130,6 @@ void bdRead(struct block_device* bd, uint32_t address, uint8_t* buffer, size_t s
     _bdRead(bd, ad.block, ad.page, ad.offset, buffer, size);
 }
 
-int bdCountPages(struct block_device* bd) {
-    int count = 0;
-
-    for (int b = 0; b < PICO_DEVICE_BLOCK_COUNT; b++) {
-        for (int p = 0; p < PICO_FLASH_PAGE_PER_BLOCK; p++) {
-            if (bd->page_present[b][p]) {
-                count++;
-            }
-        }
-    }
-
-    return count;
-}
-
 bool bdIsBlockStart(struct block_device* bd, uint32_t targetAddr) {
 	return (((targetAddr - bd->base_address) % PICO_ERASE_PAGE_SIZE) == 0);
 }

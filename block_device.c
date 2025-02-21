@@ -78,16 +78,6 @@ void bdEraseBlock(struct block_device* bd, uint32_t address) {
     _bdEraseBlock(bd, block);
 }
 
-void bdDebugPrint(struct block_device* bd) {
-    for (int b = 0; b < PICO_DEVICE_BLOCK_COUNT; b++) {
-        for (int p = 0; p < PICO_FLASH_PAGE_PER_BLOCK; p++) {
-            if (bd->page_present[b][p]) {
-                printf("Page [%d, %d]: %08x\n", b, p, bd->base_address + bdStorageOffset(b, p));
-            }
-        }
-    }
-}
-
 void _bdWrite(struct block_device* bd, uint32_t block, uint32_t page, const uint8_t* data, size_t size) {
 
     bd->page_present[block][page] = true;

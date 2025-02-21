@@ -51,6 +51,16 @@ func bdCountPages(bd *C.struct_block_device) int {
 	return count
 }
 
+func bdDebugPrint(bd *C.struct_block_device) {
+	for b := C.uint32_t(0); b < PICO_DEVICE_BLOCK_COUNT; b++ {
+		for p := C.uint32_t(0); p < PICO_FLASH_PAGE_PER_BLOCK; p++ {
+			if C.bdPagePresent(bd, b, p) {
+				fmt.Printf("Page [%v, %v]: 0x%08x\n", b, p, C.bdTargetAddress(bd, b, p))
+			}
+		}
+	}
+}
+
 func bdReadFromUF2(device *C.struct_block_device, if2 io.Reader) {
 
 	ufn := Uf2Frame{}

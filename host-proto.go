@@ -200,23 +200,22 @@ func addFile(fsFilename, fileToAdd string) {
 	bdWriteToUF2(device, f)
 }
 
-func list_files(fs *C.lfs_t, dirEntry string) {
+func list_files(fs *LittleFs, dirEntry string) {
 
-	var lfsdir C.lfs_dir_t
-	var pin runtime.Pinner
-	defer pin.Unpin()
-	lfsdp := &lfsdir
-	pin.Pin(lfsdp)
-
-	err := C.lfs_dir_open(fs, lfsdp, C.CString(dirEntry))
-	if err != 0 {
-		fmt.Println("dir not opened")
+	dir := LfsDir{Lfs: fs}
+	err := dir.Open(dirEntry)
+	if err != nil {
+		fmt.Println(err.Error())
 		os.Exit(10)
 	}
-	defer C.lfs_dir_close(fs, lfsdp)
+	defer dir.Close()
 
 	var info C.struct_lfs_info
-	for i := C.lfs_dir_read(fs, lfsdp, &info); i > 0; i = C.lfs_dir_read(fs, lfsdp, &info) {
+
+	for more, err := dir.Read(&info); more; more, err = dir.Read(&info) {
+		if err != nil {
+			os.Exit(10)
+		}
 		fmt.Println(C.GoString(&info.name[0]))
 	}
 
@@ -232,7 +231,7 @@ func mount_and_ls(fs *BdFS, dirEntry string) {
 	}
 	defer lfs.unmount()
 
-	list_files(&lfs.lfs, dirEntry)
+	list_files(&lfs, dirEntry)
 }
 
 func lsDir(fsFilename, dirEntry string) {

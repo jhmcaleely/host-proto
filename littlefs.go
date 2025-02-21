@@ -7,6 +7,7 @@ import "C"
 import (
 	"errors"
 	"runtime"
+	"unsafe"
 )
 
 type LittleFs struct {
@@ -53,5 +54,59 @@ func lfsFormat(cfg *C.struct_lfs_config) error {
 		return errors.New("format failed")
 	} else {
 		return nil
+	}
+}
+
+type LfsDir struct {
+	Lfs *LittleFs
+	Dir C.lfs_dir_t
+}
+
+func (dir *LfsDir) Open(name string) error {
+	dirp := &dir.Dir
+	var pin runtime.Pinner
+	pin.Pin(dirp)
+	defer pin.Unpin()
+	lfsp := &dir.Lfs.lfs
+	pin.Pin(lfsp)
+
+	cname := C.CString(name)
+	defer C.free(unsafe.Pointer(cname))
+
+	result := C.lfs_dir_open(lfsp, dirp, cname)
+	if result < 0 {
+		return errors.New("dir open failed")
+	}
+	return nil
+}
+
+func (dir *LfsDir) Close() error {
+	dirp := &dir.Dir
+	var pin runtime.Pinner
+	pin.Pin(dirp)
+	defer pin.Unpin()
+	lfsp := &dir.Lfs.lfs
+	pin.Pin(lfsp)
+
+	result := C.lfs_dir_close(lfsp, dirp)
+	if result < 0 {
+		return errors.New("dir close failed")
+	}
+	return nil
+}
+
+func (dir *LfsDir) Read(info *C.struct_lfs_info) (bool, error) {
+	dirp := &dir.Dir
+	var pin runtime.Pinner
+	pin.Pin(dirp)
+	defer pin.Unpin()
+	lfsp := &dir.Lfs.lfs
+	pin.Pin(lfsp)
+
+	result := C.lfs_dir_read(lfsp, dirp, info)
+	if result < 0 {
+		return false, errors.New("dir read failed")
+	} else {
+		return result != 0, nil
 	}
 }

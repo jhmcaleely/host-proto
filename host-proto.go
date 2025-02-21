@@ -223,21 +223,16 @@ func list_files(fs *C.lfs_t, dirEntry string) {
 }
 
 func mount_and_ls(fs *BdFS, dirEntry string) {
-	var lfs C.lfs_t
-	var pin runtime.Pinner
-	defer pin.Unpin()
+	var lfs LittleFs
 
-	lfsp := &lfs
-	pin.Pin(lfsp)
-
-	lfsres := C.lfs_mount(lfsp, fs.LfsP)
-	if lfsres != 0 {
-		C.lfs_format(lfsp, fs.LfsP)
-		C.lfs_mount(lfsp, fs.LfsP)
+	err := lfs.mount(fs.LfsP)
+	if err != nil {
+		lfsFormat(fs.LfsP)
+		lfs.mount(fs.LfsP)
 	}
-	defer C.lfs_unmount(lfsp)
+	defer lfs.unmount()
 
-	list_files(lfsp, dirEntry)
+	list_files(&lfs.lfs, dirEntry)
 }
 
 func lsDir(fsFilename, dirEntry string) {

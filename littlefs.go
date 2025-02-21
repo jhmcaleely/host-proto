@@ -12,6 +12,16 @@ import (
 	"unsafe"
 )
 
+type LittleFsConfig struct {
+	chandle *C.struct_lfs_config
+}
+
+func newLittleFsConfig() *LittleFsConfig {
+	var ccfg C.struct_lfs_config
+	cfg := LittleFsConfig{chandle: &ccfg}
+	return &cfg
+}
+
 type LittleFs struct {
 	lfs C.lfs_t
 }

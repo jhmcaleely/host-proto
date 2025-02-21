@@ -27,19 +27,18 @@ const PICO_PROG_PAGE_SIZE = 256
 const PICO_UF2_FAMILYID uint32 = 0xe48bff56
 
 type BdFS struct {
-	LfsConfig C.struct_lfs_config
-	FsConfig  C.struct_flash_fs
-
-	LfsP *C.struct_lfs_config
-	FsP  *C.struct_flash_fs
+	cfg *LittleFsConfig
+	FsP *C.struct_flash_fs
 
 	Device *C.struct_block_device
 }
 
 func newBdFS(device *C.struct_block_device) *BdFS {
-	cfg := BdFS{}
-	cfg.LfsP = &cfg.LfsConfig
-	cfg.FsP = &cfg.FsConfig
+	cfg := BdFS{cfg: newLittleFsConfig()}
+
+	var blockfs C.struct_flash_fs
+	cfg.FsP = &blockfs
+
 	cfg.Device = device
 
 	return &cfg
@@ -47,23 +46,23 @@ func newBdFS(device *C.struct_block_device) *BdFS {
 
 func (fs *BdFS) init(baseAddr, blockCount uint32) error {
 
-	C.init_fscfg(fs.LfsP, fs.FsP, fs.Device, C.uint32_t(baseAddr), C.uint32_t(blockCount))
+	C.init_fscfg(fs.cfg.chandle, fs.FsP, fs.Device, C.uint32_t(baseAddr), C.uint32_t(blockCount))
 
 	return nil
 }
 
 func (fs *BdFS) Close() error {
-	C.destroy_fscfg(fs.LfsP, fs.FsP)
+	C.destroy_fscfg(fs.cfg.chandle, fs.FsP)
 	return nil
 }
 
 func (fs *BdFS) ensure_mount() *LittleFs {
 	var lfs LittleFs
 
-	err := lfs.mount(fs.LfsP)
+	err := lfs.mount(fs.cfg.chandle)
 	if err != nil {
-		lfsFormat(fs.LfsP)
-		lfs.mount(fs.LfsP)
+		lfsFormat(fs.cfg.chandle)
+		lfs.mount(fs.cfg.chandle)
 	}
 	return &lfs
 }
@@ -118,7 +117,7 @@ func bootCountDemo(fsFilename string) {
 
 	fs := newBdFS(device)
 	var pin runtime.Pinner
-	pin.Pin(fs.LfsP)
+	pin.Pin(fs.cfg.chandle)
 	defer pin.Unpin()
 	pin.Pin(fs.FsP)
 
@@ -150,7 +149,7 @@ func addFile(fsFilename, fileToAdd string) {
 
 	fs := newBdFS(device)
 	var pin runtime.Pinner
-	pin.Pin(fs.LfsP)
+	pin.Pin(fs.cfg.chandle)
 	defer pin.Unpin()
 	pin.Pin(fs.FsP)
 
@@ -203,7 +202,7 @@ func lsDir(fsFilename, dirEntry string) {
 
 	fs := newBdFS(device)
 	var pin runtime.Pinner
-	pin.Pin(fs.LfsP)
+	pin.Pin(fs.cfg.chandle)
 	defer pin.Unpin()
 	pin.Pin(fs.FsP)
 

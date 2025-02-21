@@ -42,6 +42,10 @@ func (fs *LittleFs) unmount() error {
 	}
 }
 
+func (fs *LittleFs) Close() error {
+	return fs.unmount()
+}
+
 func lfsFormat(cfg *C.struct_lfs_config) error {
 	var lfs C.lfs_t
 	lfsp := &lfs

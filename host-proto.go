@@ -57,6 +57,17 @@ func (fs *BdFS) Close() error {
 	return nil
 }
 
+func (fs *BdFS) ensure_mount() *LittleFs {
+	var lfs LittleFs
+
+	err := lfs.mount(fs.LfsP)
+	if err != nil {
+		lfsFormat(fs.LfsP)
+		lfs.mount(fs.LfsP)
+	}
+	return &lfs
+}
+
 func update_boot_count(fs *C.lfs_t) {
 	var lfsfile C.lfs_file_t
 	var pin runtime.Pinner
@@ -221,19 +232,6 @@ func list_files(fs *LittleFs, dirEntry string) {
 
 }
 
-func mount_and_ls(fs *BdFS, dirEntry string) {
-	var lfs LittleFs
-
-	err := lfs.mount(fs.LfsP)
-	if err != nil {
-		lfsFormat(fs.LfsP)
-		lfs.mount(fs.LfsP)
-	}
-	defer lfs.unmount()
-
-	list_files(&lfs, dirEntry)
-}
-
 func lsDir(fsFilename, dirEntry string) {
 	f, err := os.OpenFile(fsFilename, os.O_RDWR|os.O_CREATE, 0666)
 	if err != nil {
@@ -256,7 +254,10 @@ func lsDir(fsFilename, dirEntry string) {
 
 	bdReadFromUF2(device, f)
 
-	mount_and_ls(fs, dirEntry)
+	lfs := fs.ensure_mount()
+	defer lfs.Close()
+
+	list_files(lfs, dirEntry)
 }
 
 func main() {

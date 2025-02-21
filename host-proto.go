@@ -10,13 +10,13 @@ int open_flags = LFS_O_RDWR | LFS_O_CREAT;
 import "C"
 
 import (
+	"encoding/binary"
 	"flag"
 	"fmt"
 	"io"
 	"log"
 	"os"
 	"runtime"
-	"unsafe"
 )
 
 const PICO_FLASH_BASE_ADDR uint32 = 0x10000000
@@ -68,47 +68,24 @@ func (fs *BdFS) ensure_mount() *LittleFs {
 	return &lfs
 }
 
-func update_boot_count(fs *C.lfs_t) {
-	var lfsfile C.lfs_file_t
-	var pin runtime.Pinner
-	defer pin.Unpin()
+func update_boot_count(lfs *LittleFs) {
 
-	filep := &lfsfile
-	pin.Pin(filep)
+	file := newLfsFile(lfs)
+	file.Open("boot_count")
+	defer file.Close()
 
-	C.lfs_file_open(fs, filep, C.CString("boot_count"), C.open_flags)
-	defer C.lfs_file_close(fs, filep)
+	var boot_count uint32
+	binary.Read(file, binary.LittleEndian, &boot_count)
 
-	var boot_count C.uint32_t
-	C.lfs_file_read(fs, filep, unsafe.Pointer(&boot_count), 4)
-	// update boot count
 	boot_count += 1
-	C.lfs_file_rewind(fs, filep)
+	file.Rewind()
 
-	C.lfs_file_write(fs, filep, unsafe.Pointer(&boot_count), 4)
+	binary.Write(file, binary.LittleEndian, boot_count)
 
 	fmt.Printf("boot count: %d\n", boot_count)
 }
 
-func mount_and_update_boot(fs *BdFS) {
-	var lfs C.lfs_t
-	var pin runtime.Pinner
-	defer pin.Unpin()
-
-	lfsp := &lfs
-	pin.Pin(lfsp)
-
-	lfsres := C.lfs_mount(lfsp, fs.LfsP)
-	if lfsres != 0 {
-		C.lfs_format(lfsp, fs.LfsP)
-		C.lfs_mount(lfsp, fs.LfsP)
-	}
-	defer C.lfs_unmount(lfsp)
-
-	update_boot_count(lfsp)
-}
-
-func add_file(fs *C.lfs_t, fileToAdd string) {
+func add_file(lfs *LittleFs, fileToAdd string) {
 
 	r, err := os.Open(fileToAdd)
 	if err != nil {
@@ -122,35 +99,11 @@ func add_file(fs *C.lfs_t, fileToAdd string) {
 		os.Exit(1)
 	}
 
-	var lfsfile C.lfs_file_t
-	var pin runtime.Pinner
-	defer pin.Unpin()
+	file := newLfsFile(lfs)
+	file.Open(fileToAdd)
+	defer file.Close()
 
-	filep := &lfsfile
-	pin.Pin(filep)
-
-	C.lfs_file_open(fs, filep, C.CString(fileToAdd), C.open_flags)
-	defer C.lfs_file_close(fs, filep)
-
-	C.lfs_file_write(fs, filep, unsafe.Pointer(&data[0]), C.lfs_size_t(len(data)))
-}
-
-func mount_and_add_file(fs *BdFS, fileToAdd string) {
-	var lfs C.lfs_t
-	var pin runtime.Pinner
-	defer pin.Unpin()
-
-	lfsp := &lfs
-	pin.Pin(lfsp)
-
-	lfsres := C.lfs_mount(lfsp, fs.LfsP)
-	if lfsres != 0 {
-		C.lfs_format(lfsp, fs.LfsP)
-		C.lfs_mount(lfsp, fs.LfsP)
-	}
-	defer C.lfs_unmount(lfsp)
-
-	add_file(lfsp, fileToAdd)
+	file.Write(data)
 }
 
 func bootCountDemo(fsFilename string) {
@@ -175,7 +128,10 @@ func bootCountDemo(fsFilename string) {
 
 	bdReadFromUF2(device, f)
 
-	mount_and_update_boot(fs)
+	lfs := fs.ensure_mount()
+	defer lfs.Close()
+
+	update_boot_count(lfs)
 
 	f.Seek(0, io.SeekStart)
 
@@ -204,7 +160,10 @@ func addFile(fsFilename, fileToAdd string) {
 
 	bdReadFromUF2(device, f)
 
-	mount_and_add_file(fs, fileToAdd)
+	lfs := fs.ensure_mount()
+	defer lfs.Close()
+
+	add_file(lfs, fileToAdd)
 
 	f.Seek(0, io.SeekStart)
 

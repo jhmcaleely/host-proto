@@ -1,11 +1,13 @@
 package main
 
 /*
+#include "stdlib.h"
 #include "lfs.h"
 */
 import "C"
 import (
 	"errors"
+	"io"
 	"runtime"
 	"unsafe"
 )
@@ -113,4 +115,104 @@ func (dir *LfsDir) Read(info *C.struct_lfs_info) (bool, error) {
 	} else {
 		return result != 0, nil
 	}
+}
+
+type LfsFile struct {
+	Lfs  *LittleFs
+	File *C.lfs_file_t
+}
+
+func newLfsFile(lfs *LittleFs) *LfsFile {
+	var f C.lfs_file_t
+	var lf = LfsFile{Lfs: lfs, File: &f}
+
+	return &lf
+}
+
+func (file LfsFile) Open(name string) error {
+	cname := C.CString(name)
+	defer C.free(unsafe.Pointer(cname))
+
+	var pin runtime.Pinner
+	pin.Pin(file.File)
+	defer pin.Unpin()
+	lfsp := &file.Lfs.lfs
+	pin.Pin(lfsp)
+
+	oflags := C.int(C.LFS_O_RDWR | C.LFS_O_CREAT)
+
+	result := C.lfs_file_open(lfsp, file.File, cname, oflags)
+	if result < 0 {
+		return errors.New("file open error")
+	}
+	return nil
+}
+
+func (file LfsFile) Close() error {
+	var pin runtime.Pinner
+	pin.Pin(file.File)
+	defer pin.Unpin()
+	lfsp := &file.Lfs.lfs
+	pin.Pin(lfsp)
+
+	result := C.lfs_file_close(lfsp, file.File)
+	if result < 0 {
+		return errors.New("file close error")
+	}
+	return nil
+}
+
+func (file LfsFile) Write(data []byte) (int, error) {
+
+	var pin runtime.Pinner
+	pin.Pin(file.File)
+	defer pin.Unpin()
+	lfsp := &file.Lfs.lfs
+	pin.Pin(lfsp)
+
+	pin.Pin(file.Lfs)
+
+	cdata := C.CBytes(data)
+	defer C.free(cdata)
+
+	result := C.lfs_file_write(lfsp, file.File, cdata, C.lfs_size_t(len(data)))
+	if result < 0 {
+		return 0, errors.New("write failed")
+	}
+	return int(result), nil
+}
+
+func (file LfsFile) Read(data []byte) (int, error) {
+
+	var pin runtime.Pinner
+	pin.Pin(file.File)
+	defer pin.Unpin()
+
+	cdata := C.CBytes(data)
+	defer C.free(cdata)
+
+	result := C.lfs_file_read(&file.Lfs.lfs, file.File, cdata, C.lfs_size_t(len(data)))
+	if result < 0 {
+		return 0, errors.New("read failed")
+	} else if result == 0 {
+		return 0, io.EOF
+	} else {
+		copy(data, C.GoBytes(cdata, result))
+		return int(result), nil
+	}
+}
+
+func (file LfsFile) Rewind() error {
+
+	var pin runtime.Pinner
+	pin.Pin(file.File)
+	defer pin.Unpin()
+	lfsp := &file.Lfs.lfs
+	pin.Pin(lfsp)
+
+	result := C.lfs_file_rewind(lfsp, file.File)
+	if result < 0 {
+		return errors.New("rewind failed")
+	}
+	return nil
 }

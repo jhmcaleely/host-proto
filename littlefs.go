@@ -61,9 +61,9 @@ func newLittleFs() *LittleFs {
 	return &lfs
 }
 
-func (cfg *LittleFsConfig) Mount() (*LittleFs, error) {
+func (cfg LittleFsConfig) Mount() (LittleFs, error) {
 
-	lfs := newLittleFs()
+	lfs := *newLittleFs()
 
 	var pin runtime.Pinner
 	pin.Pin(lfs.chandle)
@@ -72,7 +72,7 @@ func (cfg *LittleFsConfig) Mount() (*LittleFs, error) {
 
 	result := C.lfs_mount(lfs.chandle, cfg.chandle)
 	if result < 0 {
-		return nil, errors.New("mount failed")
+		return lfs, errors.New("mount failed")
 	} else {
 		return lfs, nil
 	}
@@ -179,13 +179,13 @@ func (dir LfsDir) Read() (more bool, info LittleFsInfo, err error) {
 }
 
 type LfsFile struct {
-	Lfs  *LittleFs
-	File *C.lfs_file_t
+	fs      LittleFs
+	chandle *C.lfs_file_t
 }
 
-func newLfsFile(lfs *LittleFs) *LfsFile {
+func newLfsFile(lfs LittleFs) *LfsFile {
 	var f C.lfs_file_t
-	var lf = LfsFile{Lfs: lfs, File: &f}
+	var lf = LfsFile{fs: lfs, chandle: &f}
 
 	return &lf
 }
@@ -195,13 +195,13 @@ func (file LfsFile) Open(name string) error {
 	defer C.free(unsafe.Pointer(cname))
 
 	var pin runtime.Pinner
-	pin.Pin(file.File)
+	pin.Pin(file.chandle)
 	defer pin.Unpin()
-	pin.Pin(file.Lfs.chandle)
+	pin.Pin(file.fs.chandle)
 
 	oflags := C.int(C.LFS_O_RDWR | C.LFS_O_CREAT)
 
-	result := C.lfs_file_open(file.Lfs.chandle, file.File, cname, oflags)
+	result := C.lfs_file_open(file.fs.chandle, file.chandle, cname, oflags)
 	if result < 0 {
 		return errors.New("file open error")
 	}
@@ -210,11 +210,11 @@ func (file LfsFile) Open(name string) error {
 
 func (file LfsFile) Close() error {
 	var pin runtime.Pinner
-	pin.Pin(file.File)
+	pin.Pin(file.chandle)
 	defer pin.Unpin()
-	pin.Pin(file.Lfs.chandle)
+	pin.Pin(file.fs.chandle)
 
-	result := C.lfs_file_close(file.Lfs.chandle, file.File)
+	result := C.lfs_file_close(file.fs.chandle, file.chandle)
 	if result < 0 {
 		return errors.New("file close error")
 	}
@@ -224,16 +224,14 @@ func (file LfsFile) Close() error {
 func (file LfsFile) Write(data []byte) (int, error) {
 
 	var pin runtime.Pinner
-	pin.Pin(file.File)
+	pin.Pin(file.chandle)
 	defer pin.Unpin()
-	pin.Pin(file.Lfs.chandle)
-
-	pin.Pin(file.Lfs)
+	pin.Pin(file.fs.chandle)
 
 	cdata := C.CBytes(data)
 	defer C.free(cdata)
 
-	result := C.lfs_file_write(file.Lfs.chandle, file.File, cdata, C.lfs_size_t(len(data)))
+	result := C.lfs_file_write(file.fs.chandle, file.chandle, cdata, C.lfs_size_t(len(data)))
 	if result < 0 {
 		return 0, errors.New("write failed")
 	}
@@ -243,15 +241,15 @@ func (file LfsFile) Write(data []byte) (int, error) {
 func (file LfsFile) Read(data []byte) (int, error) {
 
 	var pin runtime.Pinner
-	pin.Pin(file.File)
+	pin.Pin(file.chandle)
 	defer pin.Unpin()
 
-	pin.Pin(file.Lfs.chandle)
+	pin.Pin(file.fs.chandle)
 
 	cdata := C.CBytes(data)
 	defer C.free(cdata)
 
-	result := C.lfs_file_read(file.Lfs.chandle, file.File, cdata, C.lfs_size_t(len(data)))
+	result := C.lfs_file_read(file.fs.chandle, file.chandle, cdata, C.lfs_size_t(len(data)))
 	if result < 0 {
 		return 0, errors.New("read failed")
 	} else if result == 0 {
@@ -265,12 +263,12 @@ func (file LfsFile) Read(data []byte) (int, error) {
 func (file LfsFile) Rewind() error {
 
 	var pin runtime.Pinner
-	pin.Pin(file.File)
+	pin.Pin(file.chandle)
 	defer pin.Unpin()
 
-	pin.Pin(file.Lfs.chandle)
+	pin.Pin(file.fs.chandle)
 
-	result := C.lfs_file_rewind(file.Lfs.chandle, file.File)
+	result := C.lfs_file_rewind(file.fs.chandle, file.chandle)
 	if result < 0 {
 		return errors.New("rewind failed")
 	}

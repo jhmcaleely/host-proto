@@ -10,8 +10,8 @@ import (
 	"runtime"
 )
 
-func ensure_mount(cfg *LittleFsConfig) *LittleFs {
-	var lfs *LittleFs
+func ensure_mount(cfg LittleFsConfig) LittleFs {
+	var lfs LittleFs
 
 	lfs, err := cfg.Mount()
 	if err != nil {
@@ -21,7 +21,7 @@ func ensure_mount(cfg *LittleFsConfig) *LittleFs {
 	return lfs
 }
 
-func update_boot_count(lfs *LittleFs) {
+func update_boot_count(lfs LittleFs) {
 
 	file := newLfsFile(lfs)
 	file.Open("boot_count")
@@ -38,7 +38,7 @@ func update_boot_count(lfs *LittleFs) {
 	fmt.Printf("boot count: %d\n", boot_count)
 }
 
-func add_file(lfs *LittleFs, fileToAdd string) {
+func add_file(lfs LittleFs, fileToAdd string) {
 
 	r, err := os.Open(fileToAdd)
 	if err != nil {
@@ -78,7 +78,7 @@ func bootCountDemo(device BlockDevice, fsFilename string) {
 
 	bdReadFromUF2(device, f)
 
-	lfs := ensure_mount(fs.cfg)
+	lfs := ensure_mount(*fs.cfg)
 	defer lfs.Close()
 
 	update_boot_count(lfs)
@@ -117,7 +117,7 @@ func addFile(device BlockDevice, fsFilename, fileToAdd string) {
 	bdWriteToUF2(device, f)
 }
 
-func list_files(fs *LittleFs, dirEntry string) {
+func list_files(fs LittleFs, dirEntry string) {
 
 	dir, err := fs.OpenDir(dirEntry)
 	if err != nil {

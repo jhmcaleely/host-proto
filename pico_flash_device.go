@@ -1,0 +1,9 @@
+package main
+
+// #include "pico_flash_device.h"
+import "C"
+
+const PICO_FLASH_BASE_ADDR uint32 = C.PICO_FLASH_BASE_ADDR
+const PICO_FLASH_SIZE_BYTES = C.PICO_FLASH_SIZE_BYTES
+const PICO_ERASE_PAGE_SIZE = C.PICO_ERASE_PAGE_SIZE
+const PICO_PROG_PAGE_SIZE = C.PICO_PROG_PAGE_SIZE

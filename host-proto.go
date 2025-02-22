@@ -107,6 +107,14 @@ func cmdBootCountDemo(fs BdFS, fsFilename string) {
 	fs.device.writeToUF2File(fsFilename)
 }
 
+func formatCmd(fs BdFS, fsFilename string) {
+	fs.device.readFromUF2File(fsFilename)
+
+	fs.cfg.Format()
+
+	fs.device.writeToUF2File(fsFilename)
+}
+
 func cmdAddFile(fs BdFS, fsFilename, fileToAdd string) {
 	fs.device.readFromUF2File(fsFilename)
 
@@ -132,6 +140,9 @@ func main() {
 	bootCountDemoCmd := flag.NewFlagSet("bootcount", flag.ExitOnError)
 	bootCountFS := bootCountDemoCmd.String("fs", "test.uf2", "mount and increment boot_count on fs")
 
+	formatFSCmd := flag.NewFlagSet("format", flag.ExitOnError)
+	formatFSFS := formatFSCmd.String("fs", "test.uf2", "format fs on this image")
+
 	addFileCmd := flag.NewFlagSet("addfile", flag.ExitOnError)
 	addFileFS := addFileCmd.String("fs", "test.uf2", "add file to this filesystem")
 	addFileName := addFileCmd.String("add", "", "filename to add")
@@ -155,6 +166,9 @@ func main() {
 	case "bootcount":
 		bootCountDemoCmd.Parse(os.Args[2:])
 		cmdBootCountDemo(*fs, *bootCountFS)
+	case "format":
+		formatFSCmd.Parse(os.Args[2:])
+		formatCmd(*fs, *formatFSFS)
 	case "addfile":
 		addFileCmd.Parse(os.Args[2:])
 		if *addFileName == "" {

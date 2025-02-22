@@ -68,7 +68,7 @@ func bootCountDemo(device BlockDevice, fsFilename string) {
 	fs := newBdFS(device, FLASHFS_BASE_ADDR, FLASHFS_BLOCK_COUNT)
 	defer fs.Close()
 
-	bdReadFromUF2(device, f)
+	device.ReadFromUF2(f)
 
 	lfs := ensure_mount(fs.cfg)
 	defer lfs.Close()
@@ -77,7 +77,7 @@ func bootCountDemo(device BlockDevice, fsFilename string) {
 
 	f.Seek(0, io.SeekStart)
 
-	bdWriteToUF2(device, f)
+	device.WriteAsUF2(f)
 }
 
 func addFile(device BlockDevice, fsFilename, fileToAdd string) {
@@ -90,7 +90,7 @@ func addFile(device BlockDevice, fsFilename, fileToAdd string) {
 	fs := newBdFS(device, FLASHFS_BASE_ADDR, FLASHFS_BLOCK_COUNT)
 	defer fs.Close()
 
-	bdReadFromUF2(device, f)
+	device.ReadFromUF2(f)
 
 	lfs, _ := fs.cfg.Mount()
 	defer lfs.Close()
@@ -99,7 +99,7 @@ func addFile(device BlockDevice, fsFilename, fileToAdd string) {
 
 	f.Seek(0, io.SeekStart)
 
-	bdWriteToUF2(device, f)
+	device.WriteAsUF2(f)
 }
 
 func list_files(fs LittleFs, dirEntry string) {
@@ -130,7 +130,7 @@ func lsDir(device BlockDevice, fsFilename, dirEntry string) {
 	fs := newBdFS(device, FLASHFS_BASE_ADDR, FLASHFS_BLOCK_COUNT)
 	defer fs.Close()
 
-	bdReadFromUF2(device, f)
+	device.ReadFromUF2(f)
 
 	lfs, _ := fs.cfg.Mount()
 	defer lfs.Close()

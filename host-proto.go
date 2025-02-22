@@ -74,7 +74,7 @@ func bootCountDemo(fsFilename string) {
 	device := C.bdCreate(C.uint32_t(PICO_FLASH_BASE_ADDR))
 	defer C.bdDestroy(device)
 
-	fs := newBdFS(device, FLASHFS_BLOCK_COUNT)
+	fs := newBdFS(device, FLASHFS_BASE_ADDR, FLASHFS_BLOCK_COUNT)
 	var pin runtime.Pinner
 	pin.Pin(fs.cfg.chandle)
 	defer pin.Unpin()
@@ -82,7 +82,7 @@ func bootCountDemo(fsFilename string) {
 
 	defer fs.Close()
 
-	fs.init(FLASHFS_BASE_ADDR)
+	fs.init()
 
 	bdReadFromUF2(device, f)
 
@@ -106,7 +106,7 @@ func addFile(fsFilename, fileToAdd string) {
 	device := C.bdCreate(C.uint32_t(PICO_FLASH_BASE_ADDR))
 	defer C.bdDestroy(device)
 
-	fs := newBdFS(device, FLASHFS_BLOCK_COUNT)
+	fs := newBdFS(device, FLASHFS_BASE_ADDR, FLASHFS_BLOCK_COUNT)
 	var pin runtime.Pinner
 	pin.Pin(fs.cfg.chandle)
 	defer pin.Unpin()
@@ -114,7 +114,7 @@ func addFile(fsFilename, fileToAdd string) {
 
 	defer fs.Close()
 
-	fs.init(FLASHFS_BASE_ADDR)
+	fs.init()
 
 	bdReadFromUF2(device, f)
 
@@ -156,7 +156,7 @@ func lsDir(fsFilename, dirEntry string) {
 	device := C.bdCreate(C.uint32_t(PICO_FLASH_BASE_ADDR))
 	defer C.bdDestroy(device)
 
-	fs := newBdFS(device, FLASHFS_BLOCK_COUNT)
+	fs := newBdFS(device, FLASHFS_BASE_ADDR, FLASHFS_BLOCK_COUNT)
 	var pin runtime.Pinner
 	pin.Pin(fs.cfg.chandle)
 	defer pin.Unpin()
@@ -164,7 +164,7 @@ func lsDir(fsFilename, dirEntry string) {
 
 	defer fs.Close()
 
-	fs.init(FLASHFS_BASE_ADDR)
+	fs.init()
 
 	bdReadFromUF2(device, f)
 

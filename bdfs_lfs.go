@@ -12,20 +12,19 @@ type BdFS struct {
 	Device *C.struct_block_device
 }
 
-func newBdFS(device *C.struct_block_device, blockCount uint32) *BdFS {
-	cfg := BdFS{cfg: newLittleFsConfig(blockCount)}
+func newBdFS(device *C.struct_block_device, baseAddr uint32, blockCount uint32) *BdFS {
 
 	var blockfs C.struct_flash_fs
-	cfg.FsP = &blockfs
+	blockfs.device = device
+	blockfs.fs_flash_base_address = C.uint32_t(baseAddr)
 
-	cfg.Device = device
-
+	cfg := BdFS{cfg: newLittleFsConfig(blockCount), FsP: &blockfs, Device: device}
 	return &cfg
 }
 
-func (fs *BdFS) init(baseAddr uint32) error {
+func (fs *BdFS) init() error {
 
-	C.install_bdfs_hooks(fs.cfg.chandle, fs.FsP, fs.Device, C.uint32_t(baseAddr))
+	C.install_bdfs_hooks(fs.cfg.chandle, fs.FsP)
 
 	return nil
 }

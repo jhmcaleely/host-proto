@@ -24,9 +24,7 @@ struct flash_fs {
     uint32_t fs_flash_base_address;
 };
 
-// configuration of the filesystem is provided by this function
-void install_bdfs_hooks(struct lfs_config* cfg, struct flash_fs* fs, struct block_device* bd, uint32_t fs_base_address);
-
+void install_bdfs_hooks(struct lfs_config* cfg, struct flash_fs* fs);
 void remove_bdfs_hooks(struct lfs_config* cfg, struct flash_fs* fs);
 
 #endif

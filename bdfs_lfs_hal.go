@@ -8,8 +8,6 @@ package main
 import "C"
 import "unsafe"
 
-const LFS_ERR_OK C.int = 0
-
 func fsAddressForBlock(fs_base_address C.uint32_t, block C.lfs_block_t, off C.lfs_off_t) C.uint32_t {
 
 	byte_offset := block*PICO_ERASE_PAGE_SIZE + off
@@ -24,7 +22,7 @@ func go_bdfs_read(fs *C.struct_flash_fs, block C.lfs_block_t, off C.lfs_off_t, b
 
 	C.bdRead(fs.device, device_address, (*C.uint8_t)(unsafe.Pointer(buffer)), C.size_t(size))
 
-	return LFS_ERR_OK
+	return C.LFS_ERR_OK
 }
 
 //export go_bdfs_prog_page
@@ -38,7 +36,7 @@ func go_bdfs_prog_page(fs *C.struct_flash_fs, block C.lfs_block_t, off C.lfs_off
 
 	bd.DebugPrint()
 
-	return LFS_ERR_OK
+	return C.LFS_ERR_OK
 }
 
 //export go_bdfs_erase_block
@@ -49,5 +47,5 @@ func go_bdfs_erase_block(fs *C.struct_flash_fs, block C.lfs_block_t) C.int {
 
 	bd.EraseBlock(uint32(device_address))
 
-	return LFS_ERR_OK
+	return C.LFS_ERR_OK
 }

@@ -7,7 +7,6 @@ import (
 	"io"
 	"log"
 	"os"
-	"runtime"
 )
 
 func ensure_mount(cfg LittleFsConfig) LittleFs {
@@ -67,14 +66,7 @@ func bootCountDemo(device BlockDevice, fsFilename string) {
 	defer f.Close()
 
 	fs := newBdFS(device, FLASHFS_BASE_ADDR, FLASHFS_BLOCK_COUNT)
-	var pin runtime.Pinner
-	pin.Pin(fs.cfg.chandle)
-	defer pin.Unpin()
-	pin.Pin(fs.FsP)
-
 	defer fs.Close()
-
-	fs.init()
 
 	bdReadFromUF2(device, f)
 
@@ -96,14 +88,7 @@ func addFile(device BlockDevice, fsFilename, fileToAdd string) {
 	defer f.Close()
 
 	fs := newBdFS(device, FLASHFS_BASE_ADDR, FLASHFS_BLOCK_COUNT)
-	var pin runtime.Pinner
-	pin.Pin(fs.cfg.chandle)
-	defer pin.Unpin()
-	pin.Pin(fs.FsP)
-
 	defer fs.Close()
-
-	fs.init()
 
 	bdReadFromUF2(device, f)
 
@@ -143,14 +128,7 @@ func lsDir(device BlockDevice, fsFilename, dirEntry string) {
 	defer f.Close()
 
 	fs := newBdFS(device, FLASHFS_BASE_ADDR, FLASHFS_BLOCK_COUNT)
-	var pin runtime.Pinner
-	pin.Pin(fs.cfg.chandle)
-	defer pin.Unpin()
-	pin.Pin(fs.FsP)
-
 	defer fs.Close()
-
-	fs.init()
 
 	bdReadFromUF2(device, f)
 

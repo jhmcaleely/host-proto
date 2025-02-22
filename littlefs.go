@@ -68,6 +68,7 @@ func (cfg LittleFsConfig) Mount() (LittleFs, error) {
 	var pin runtime.Pinner
 	pin.Pin(lfs.chandle)
 	pin.Pin(cfg.chandle)
+	pin.Pin(cfg.chandle.context)
 	defer pin.Unpin()
 
 	result := C.lfs_mount(lfs.chandle, cfg.chandle)
@@ -113,18 +114,18 @@ func (cfg *LittleFsConfig) Format() error {
 }
 
 type LfsDir struct {
-	fs      *LittleFs
+	fs      LittleFs
 	chandle *C.lfs_dir_t
 }
 
-func newLfsDir(lfs *LittleFs) LfsDir {
+func newLfsDir(lfs LittleFs) LfsDir {
 	var cdir C.lfs_dir_t
 	dir := LfsDir{fs: lfs, chandle: &cdir}
 	return dir
 }
 
 func (fs LittleFs) OpenDir(name string) (LfsDir, error) {
-	dir := newLfsDir(&fs)
+	dir := newLfsDir(fs)
 	err := dir.Open(name)
 	return dir, err
 }
@@ -134,6 +135,7 @@ func (dir LfsDir) Open(name string) error {
 	pin.Pin(dir.chandle)
 	defer pin.Unpin()
 
+	pin.Pin(dir.fs.chandle.cfg.context)
 	pin.Pin(dir.fs.chandle)
 
 	cname := C.CString(name)

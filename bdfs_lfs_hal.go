@@ -45,8 +45,9 @@ func go_bdfs_prog_page(fs *C.struct_flash_fs, block C.lfs_block_t, off C.lfs_off
 func go_bdfs_erase_block(fs *C.struct_flash_fs, block C.lfs_block_t) C.int {
 
 	device_address := fsAddressForBlock(fs.fs_flash_base_address, block, 0)
+	bd := BlockDevice{chandle: fs.device}
 
-	C.bdEraseBlock(fs.device, device_address)
+	bd.EraseBlock(uint32(device_address))
 
 	return LFS_ERR_OK
 }

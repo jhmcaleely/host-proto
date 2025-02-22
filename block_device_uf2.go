@@ -52,8 +52,8 @@ func (device BlockDevice) ReadFromUF2(input io.Reader) {
 		}
 
 		// erase a block before writing any pages to it.
-		if C.bdIsBlockStart(device.chandle, C.uint32_t(ufn.TargetAddr)) {
-			C.bdEraseBlock(device.chandle, C.uint32_t(ufn.TargetAddr))
+		if device.IsBlockStart(ufn.TargetAddr) {
+			device.EraseBlock(ufn.TargetAddr)
 		}
 
 		C.bdWrite(device.chandle, C.uint32_t(ufn.TargetAddr), (*C.uint8_t)(unsafe.Pointer(&ufn.Data[0])), C.size_t(ufn.PayloadSize))
@@ -66,13 +66,13 @@ func (device BlockDevice) WriteAsUF2(output io.Writer) {
 
 	for b := uint32(0); b < PICO_DEVICE_BLOCK_COUNT; b++ {
 		for p := uint32(0); p < PICO_FLASH_PAGE_PER_BLOCK; p++ {
-			if C.bdPagePresent(device.chandle, C.uint32_t(b), C.uint32_t(p)) {
+			if device.PagePresent(b, p) {
 				ub := Uf2Frame{}
 
 				ub.MagicStart0 = UF2_MAGIC_START0
 				ub.MagicStart1 = UF2_MAGIC_START1
 				ub.Flags = UF2_FLAG_FAMILY_ID
-				ub.TargetAddr = uint32(C.bdTargetAddress(device.chandle, C.uint32_t(b), C.uint32_t(p)))
+				ub.TargetAddr = device.TargetAddress(b, p)
 				ub.PayloadSize = PICO_PROG_PAGE_SIZE
 				ub.BlockNo = pageCursor
 				ub.NumBlocks = pageTotal

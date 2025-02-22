@@ -30,6 +30,10 @@ struct page_address {
     uint32_t offset;
 };
 
+uint32_t bdBaseAddress(struct block_device* bd) {
+    return bd->base_address;
+}
+
 uint32_t bdStorageOffset(uint32_t block, uint32_t page) {
     return block * PICO_ERASE_PAGE_SIZE + page * PICO_PROG_PAGE_SIZE;
 }
@@ -69,13 +73,6 @@ void _bdEraseBlock(struct block_device* bd, uint32_t block) {
     for (int p = 0; p < PICO_FLASH_PAGE_PER_BLOCK; p++) {
         bd->page_present[block][p] = false;
     }
-}
-
-void bdEraseBlock(struct block_device* bd, uint32_t address) {
-
-    uint32_t block = getDeviceBlockNo(bd, address);
-
-    _bdEraseBlock(bd, block);
 }
 
 void _bdWrite(struct block_device* bd, uint32_t block, uint32_t page, const uint8_t* data, size_t size) {
@@ -120,14 +117,6 @@ void bdRead(struct block_device* bd, uint32_t address, uint8_t* buffer, size_t s
     _bdRead(bd, ad.block, ad.page, ad.offset, buffer, size);
 }
 
-bool bdIsBlockStart(struct block_device* bd, uint32_t targetAddr) {
-	return (((targetAddr - bd->base_address) % PICO_ERASE_PAGE_SIZE) == 0);
-}
-
-bool bdPagePresent(struct block_device* bd, uint32_t block, uint32_t page) {
+int bdPagePresent(struct block_device* bd, uint32_t block, uint32_t page) {
     return bd->page_present[block][page];
-}
-
-uint32_t bdTargetAddress(struct block_device* bd, uint32_t block, uint32_t page) {
-    return bd->base_address + bdStorageOffset(block, page);
 }

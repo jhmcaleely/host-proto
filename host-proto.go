@@ -57,17 +57,14 @@ func add_file(lfs LittleFs, fileToAdd string) {
 	file.Write(data)
 }
 
-func bootCountDemo(device BlockDevice, fsFilename string) {
+func bootCountDemo(fs BdFS, fsFilename string) {
 	f, err := os.OpenFile(fsFilename, os.O_RDWR|os.O_CREATE, 0666)
 	if err != nil {
 		log.Fatalln(err)
 	}
 	defer f.Close()
 
-	fs := newBdFS(device, FLASHFS_BASE_ADDR, FLASHFS_BLOCK_COUNT)
-	defer fs.Close()
-
-	device.ReadFromUF2(f)
+	fs.device.ReadFromUF2(f)
 
 	lfs := ensure_mount(fs.cfg)
 	defer lfs.Close()
@@ -76,20 +73,17 @@ func bootCountDemo(device BlockDevice, fsFilename string) {
 
 	f.Seek(0, io.SeekStart)
 
-	device.WriteAsUF2(f)
+	fs.device.WriteAsUF2(f)
 }
 
-func addFile(device BlockDevice, fsFilename, fileToAdd string) {
+func addFile(fs BdFS, fsFilename, fileToAdd string) {
 	f, err := os.OpenFile(fsFilename, os.O_RDWR|os.O_CREATE, 0666)
 	if err != nil {
 		log.Fatalln(err)
 	}
 	defer f.Close()
 
-	fs := newBdFS(device, FLASHFS_BASE_ADDR, FLASHFS_BLOCK_COUNT)
-	defer fs.Close()
-
-	device.ReadFromUF2(f)
+	fs.device.ReadFromUF2(f)
 
 	lfs, _ := fs.cfg.Mount()
 	defer lfs.Close()
@@ -98,7 +92,7 @@ func addFile(device BlockDevice, fsFilename, fileToAdd string) {
 
 	f.Seek(0, io.SeekStart)
 
-	device.WriteAsUF2(f)
+	fs.device.WriteAsUF2(f)
 }
 
 func list_files(fs LittleFs, dirEntry string) {
@@ -119,17 +113,14 @@ func list_files(fs LittleFs, dirEntry string) {
 
 }
 
-func lsDir(device BlockDevice, fsFilename, dirEntry string) {
+func lsDir(fs BdFS, fsFilename, dirEntry string) {
 	f, err := os.OpenFile(fsFilename, os.O_RDWR|os.O_CREATE, 0666)
 	if err != nil {
 		log.Fatalln(err)
 	}
 	defer f.Close()
 
-	fs := newBdFS(device, FLASHFS_BASE_ADDR, FLASHFS_BLOCK_COUNT)
-	defer fs.Close()
-
-	device.ReadFromUF2(f)
+	fs.device.ReadFromUF2(f)
 
 	lfs, _ := fs.cfg.Mount()
 	defer lfs.Close()
@@ -158,20 +149,23 @@ func main() {
 	device := newBlockDevice()
 	defer device.Close()
 
+	fs := newBdFS(device, FLASHFS_BASE_ADDR, FLASHFS_BLOCK_COUNT)
+	defer fs.Close()
+
 	switch os.Args[1] {
 	case "bootcount":
 		bootCountDemoCmd.Parse(os.Args[2:])
-		bootCountDemo(device, *bootCountFS)
+		bootCountDemo(*fs, *bootCountFS)
 	case "addfile":
 		addFileCmd.Parse(os.Args[2:])
 		if *addFileName == "" {
 			fmt.Println("expect filename to add")
 			os.Exit(1)
 		}
-		addFile(device, *addFileFS, *addFileName)
+		addFile(*fs, *addFileFS, *addFileName)
 	case "ls":
 		lsDirCmd.Parse((os.Args[2:]))
-		lsDir(device, *lsDirFS, *lsDirEntry)
+		lsDir(*fs, *lsDirFS, *lsDirEntry)
 	default:
 		fmt.Println("unknown command")
 		os.Exit(1)

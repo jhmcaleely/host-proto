@@ -185,11 +185,16 @@ type LfsFile struct {
 	chandle *C.lfs_file_t
 }
 
-func newLfsFile(lfs LittleFs) *LfsFile {
+func newLfsFile(lfs LittleFs) LfsFile {
 	var f C.lfs_file_t
 	var lf = LfsFile{fs: lfs, chandle: &f}
 
-	return &lf
+	return lf
+}
+
+func (fs LittleFs) OpenFile(name string) (LfsFile, error) {
+	file := newLfsFile(fs)
+	return file, file.Open(name)
 }
 
 func (file LfsFile) Open(name string) error {

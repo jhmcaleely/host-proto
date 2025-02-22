@@ -51,8 +51,7 @@ func add_file(lfs LittleFs, fileToAdd string) {
 		os.Exit(1)
 	}
 
-	file := newLfsFile(lfs)
-	file.Open(fileToAdd)
+	file, _ := lfs.OpenFile(fileToAdd)
 	defer file.Close()
 
 	file.Write(data)

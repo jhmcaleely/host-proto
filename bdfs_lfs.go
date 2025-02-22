@@ -8,6 +8,11 @@ import (
 	"runtime"
 )
 
+const FLASHFS_BLOCK_COUNT = C.FLASHFS_BLOCK_COUNT
+
+const FLASHFS_SIZE_BYTES = PICO_ERASE_PAGE_SIZE * FLASHFS_BLOCK_COUNT
+const FLASHFS_BASE_ADDR uint32 = PICO_FLASH_BASE_ADDR + PICO_FLASH_SIZE_BYTES - FLASHFS_SIZE_BYTES
+
 type BdFS struct {
 	cfg              LittleFsConfig
 	device           BlockDevice

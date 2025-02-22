@@ -7,8 +7,8 @@ import "C"
 
 import (
 	"encoding/binary"
-	"fmt"
 	"io"
+	"log"
 	"unsafe"
 )
 
@@ -42,13 +42,13 @@ func (device BlockDevice) ReadFromUF2(input io.Reader) {
 	for binary.Read(input, binary.LittleEndian, &ufn) != io.EOF {
 
 		if ufn.MagicStart0 != UF2_MAGIC_START0 {
-			panic("bad start0")
+			log.Fatal("bad start0")
 		}
 		if ufn.MagicStart1 != UF2_MAGIC_START1 {
-			panic("bad start1")
+			log.Fatal("bad start1")
 		}
 		if ufn.MagicEnd != UF2_MAGIC_END {
-			panic("bad end")
+			log.Fatal("bad end")
 		}
 
 		// erase a block before writing any pages to it.
@@ -84,7 +84,7 @@ func (device BlockDevice) WriteAsUF2(output io.Writer) {
 
 				ub.MagicEnd = UF2_MAGIC_END
 
-				fmt.Printf("uf2page: %08x, %d\n", ub.TargetAddr, ub.PayloadSize)
+				log.Printf("uf2page: %08x, %d\n", ub.TargetAddr, ub.PayloadSize)
 
 				binary.Write(output, binary.LittleEndian, &ub)
 

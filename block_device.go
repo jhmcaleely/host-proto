@@ -4,10 +4,7 @@ package main
 #include "block_device.h"
 */
 import "C"
-
-import (
-	"fmt"
-)
+import "log"
 
 const PICO_DEVICE_BLOCK_COUNT = PICO_FLASH_SIZE_BYTES / PICO_ERASE_PAGE_SIZE
 const PICO_FLASH_PAGE_PER_BLOCK = PICO_ERASE_PAGE_SIZE / PICO_PROG_PAGE_SIZE
@@ -45,7 +42,7 @@ func (bd BlockDevice) DebugPrint() {
 	for b := uint32(0); b < PICO_DEVICE_BLOCK_COUNT; b++ {
 		for p := uint32(0); p < PICO_FLASH_PAGE_PER_BLOCK; p++ {
 			if bd.PagePresent(b, p) {
-				fmt.Printf("Page [%v, %v]: 0x%08x\n", b, p, bd.TargetAddress(b, p))
+				log.Printf("Page [%v, %v]: 0x%08x\n", b, p, bd.TargetAddress(b, p))
 			}
 		}
 	}

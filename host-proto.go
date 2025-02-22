@@ -41,14 +41,12 @@ func add_file(lfs LittleFs, fileToAdd string) {
 
 	r, err := os.Open(fileToAdd)
 	if err != nil {
-		fmt.Println(("nothing to open"))
-		os.Exit(1)
+		log.Fatal("nothing to open")
 	}
 	defer r.Close()
 	data, err := io.ReadAll(r)
 	if err != nil {
-		fmt.Println("nothing read")
-		os.Exit(1)
+		log.Fatal("nothing read")
 	}
 
 	file, _ := lfs.OpenFile(fileToAdd)
@@ -61,14 +59,13 @@ func list_files(fs LittleFs, dirEntry string) {
 
 	dir, err := fs.OpenDir(dirEntry)
 	if err != nil {
-		fmt.Println(err.Error())
-		os.Exit(10)
+		log.Fatal(err.Error())
 	}
 	defer dir.Close()
 
 	for more, info, err := dir.Read(); more; more, info, err = dir.Read() {
 		if err != nil {
-			os.Exit(10)
+			log.Fatal(err)
 		}
 		fmt.Println(info.Name)
 	}
@@ -87,7 +84,7 @@ func (bd BlockDevice) readFromUF2File(filename string) (e error) {
 func (bd BlockDevice) writeToUF2File(filename string) error {
 	f, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE, 0666)
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatal(err)
 	}
 	defer f.Close()
 
@@ -152,8 +149,7 @@ func main() {
 	lsDirEntry := lsDirCmd.String("dir", "/", "directory to ls")
 
 	if len(os.Args) < 2 {
-		fmt.Println("expected command")
-		os.Exit(1)
+		log.Fatal("expected command")
 	}
 
 	device := newBlockDevice()
@@ -172,15 +168,13 @@ func main() {
 	case "addfile":
 		addFileCmd.Parse(os.Args[2:])
 		if *addFileName == "" {
-			fmt.Println("expect filename to add")
-			os.Exit(1)
+			log.Fatal("expect filename to add")
 		}
 		cmdAddFile(*fs, *addFileFS, *addFileName)
 	case "ls":
 		lsDirCmd.Parse((os.Args[2:]))
 		cmdLs(*fs, *lsDirFS, *lsDirEntry)
 	default:
-		fmt.Println("unknown command")
-		os.Exit(1)
+		log.Fatal("unknown command")
 	}
 }

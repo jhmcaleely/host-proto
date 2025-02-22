@@ -39,30 +39,32 @@ func newLittleFsConfig(blockCount uint32) *LittleFsConfig {
 }
 
 type LittleFs struct {
-	lfs C.lfs_t
+	chandle *C.lfs_t
 }
 
-func (fs *LittleFs) mount(cfg *C.struct_lfs_config) error {
-	lfsp := &fs.lfs
+func (cfg *LittleFsConfig) Mount() (*LittleFs, error) {
+	var clfs C.lfs_t
+	lfs := LittleFs{chandle: &clfs}
+
 	var pin runtime.Pinner
-	pin.Pin(lfsp)
+	pin.Pin(lfs.chandle)
+	pin.Pin(cfg.chandle)
 	defer pin.Unpin()
 
-	result := C.lfs_mount(lfsp, cfg)
+	result := C.lfs_mount(lfs.chandle, cfg.chandle)
 	if result < 0 {
-		return errors.New("mount failed")
+		return nil, errors.New("mount failed")
 	} else {
-		return nil
+		return &lfs, nil
 	}
 }
 
-func (fs *LittleFs) unmount() error {
-	lfsp := &fs.lfs
+func (fs LittleFs) unmount() error {
 	var pin runtime.Pinner
-	pin.Pin(lfsp)
+	pin.Pin(fs.chandle)
 	defer pin.Unpin()
 
-	result := C.lfs_unmount(lfsp)
+	result := C.lfs_unmount(fs.chandle)
 	if result < 0 {
 		return errors.New("unmount failed")
 	} else {
@@ -70,7 +72,7 @@ func (fs *LittleFs) unmount() error {
 	}
 }
 
-func (fs *LittleFs) Close() error {
+func (fs LittleFs) Close() error {
 	return fs.unmount()
 }
 
@@ -99,13 +101,13 @@ func (dir *LfsDir) Open(name string) error {
 	var pin runtime.Pinner
 	pin.Pin(dirp)
 	defer pin.Unpin()
-	lfsp := &dir.Lfs.lfs
-	pin.Pin(lfsp)
+
+	pin.Pin(dir.Lfs.chandle)
 
 	cname := C.CString(name)
 	defer C.free(unsafe.Pointer(cname))
 
-	result := C.lfs_dir_open(lfsp, dirp, cname)
+	result := C.lfs_dir_open(dir.Lfs.chandle, dirp, cname)
 	if result < 0 {
 		return errors.New("dir open failed")
 	}
@@ -117,10 +119,9 @@ func (dir *LfsDir) Close() error {
 	var pin runtime.Pinner
 	pin.Pin(dirp)
 	defer pin.Unpin()
-	lfsp := &dir.Lfs.lfs
-	pin.Pin(lfsp)
+	pin.Pin(dir.Lfs.chandle)
 
-	result := C.lfs_dir_close(lfsp, dirp)
+	result := C.lfs_dir_close(dir.Lfs.chandle, dirp)
 	if result < 0 {
 		return errors.New("dir close failed")
 	}
@@ -132,10 +133,9 @@ func (dir *LfsDir) Read(info *C.struct_lfs_info) (bool, error) {
 	var pin runtime.Pinner
 	pin.Pin(dirp)
 	defer pin.Unpin()
-	lfsp := &dir.Lfs.lfs
-	pin.Pin(lfsp)
+	pin.Pin(dir.Lfs.chandle)
 
-	result := C.lfs_dir_read(lfsp, dirp, info)
+	result := C.lfs_dir_read(dir.Lfs.chandle, dirp, info)
 	if result < 0 {
 		return false, errors.New("dir read failed")
 	} else {
@@ -162,12 +162,11 @@ func (file LfsFile) Open(name string) error {
 	var pin runtime.Pinner
 	pin.Pin(file.File)
 	defer pin.Unpin()
-	lfsp := &file.Lfs.lfs
-	pin.Pin(lfsp)
+	pin.Pin(file.Lfs.chandle)
 
 	oflags := C.int(C.LFS_O_RDWR | C.LFS_O_CREAT)
 
-	result := C.lfs_file_open(lfsp, file.File, cname, oflags)
+	result := C.lfs_file_open(file.Lfs.chandle, file.File, cname, oflags)
 	if result < 0 {
 		return errors.New("file open error")
 	}
@@ -178,10 +177,9 @@ func (file LfsFile) Close() error {
 	var pin runtime.Pinner
 	pin.Pin(file.File)
 	defer pin.Unpin()
-	lfsp := &file.Lfs.lfs
-	pin.Pin(lfsp)
+	pin.Pin(file.Lfs.chandle)
 
-	result := C.lfs_file_close(lfsp, file.File)
+	result := C.lfs_file_close(file.Lfs.chandle, file.File)
 	if result < 0 {
 		return errors.New("file close error")
 	}
@@ -193,15 +191,14 @@ func (file LfsFile) Write(data []byte) (int, error) {
 	var pin runtime.Pinner
 	pin.Pin(file.File)
 	defer pin.Unpin()
-	lfsp := &file.Lfs.lfs
-	pin.Pin(lfsp)
+	pin.Pin(file.Lfs.chandle)
 
 	pin.Pin(file.Lfs)
 
 	cdata := C.CBytes(data)
 	defer C.free(cdata)
 
-	result := C.lfs_file_write(lfsp, file.File, cdata, C.lfs_size_t(len(data)))
+	result := C.lfs_file_write(file.Lfs.chandle, file.File, cdata, C.lfs_size_t(len(data)))
 	if result < 0 {
 		return 0, errors.New("write failed")
 	}
@@ -214,10 +211,12 @@ func (file LfsFile) Read(data []byte) (int, error) {
 	pin.Pin(file.File)
 	defer pin.Unpin()
 
+	pin.Pin(file.Lfs.chandle)
+
 	cdata := C.CBytes(data)
 	defer C.free(cdata)
 
-	result := C.lfs_file_read(&file.Lfs.lfs, file.File, cdata, C.lfs_size_t(len(data)))
+	result := C.lfs_file_read(file.Lfs.chandle, file.File, cdata, C.lfs_size_t(len(data)))
 	if result < 0 {
 		return 0, errors.New("read failed")
 	} else if result == 0 {
@@ -233,10 +232,10 @@ func (file LfsFile) Rewind() error {
 	var pin runtime.Pinner
 	pin.Pin(file.File)
 	defer pin.Unpin()
-	lfsp := &file.Lfs.lfs
-	pin.Pin(lfsp)
 
-	result := C.lfs_file_rewind(lfsp, file.File)
+	pin.Pin(file.Lfs.chandle)
+
+	result := C.lfs_file_rewind(file.Lfs.chandle, file.File)
 	if result < 0 {
 		return errors.New("rewind failed")
 	}

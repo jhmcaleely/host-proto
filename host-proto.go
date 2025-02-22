@@ -55,14 +55,14 @@ func (fs *BdFS) Close() error {
 }
 
 func (fs *BdFS) ensure_mount() *LittleFs {
-	var lfs LittleFs
+	var lfs *LittleFs
 
-	err := lfs.mount(fs.cfg.chandle)
+	lfs, err := fs.cfg.Mount()
 	if err != nil {
 		lfsFormat(fs.cfg.chandle)
-		lfs.mount(fs.cfg.chandle)
+		lfs, err = fs.cfg.Mount()
 	}
-	return &lfs
+	return lfs
 }
 
 func update_boot_count(lfs *LittleFs) {

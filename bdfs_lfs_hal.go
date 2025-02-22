@@ -34,7 +34,9 @@ func go_bdfs_prog_page(fs *C.struct_flash_fs, block C.lfs_block_t, off C.lfs_off
 
 	C.bdWrite(fs.device, device_address, (*C.uint8_t)(unsafe.Pointer(buffer)), C.size_t(size))
 
-	bdDebugPrint(fs.device)
+	bd := BlockDevice{chandle: fs.device}
+
+	bd.DebugPrint()
 
 	return LFS_ERR_OK
 }

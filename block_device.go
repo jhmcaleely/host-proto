@@ -41,11 +41,11 @@ func (bd BlockDevice) CountPages() uint32 {
 	return count
 }
 
-func bdDebugPrint(bd *C.struct_block_device) {
+func (bd BlockDevice) DebugPrint() {
 	for b := C.uint32_t(0); b < PICO_DEVICE_BLOCK_COUNT; b++ {
 		for p := C.uint32_t(0); p < PICO_FLASH_PAGE_PER_BLOCK; p++ {
-			if C.bdPagePresent(bd, b, p) {
-				fmt.Printf("Page [%v, %v]: 0x%08x\n", b, p, C.bdTargetAddress(bd, b, p))
+			if C.bdPagePresent(bd.chandle, b, p) {
+				fmt.Printf("Page [%v, %v]: 0x%08x\n", b, p, C.bdTargetAddress(bd.chandle, b, p))
 			}
 		}
 	}

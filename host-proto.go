@@ -15,13 +15,6 @@ import (
 	"runtime"
 )
 
-const PICO_FLASH_BASE_ADDR uint32 = 0x10000000
-const PICO_FLASH_SIZE_BYTES = (2 * 1024 * 1024)
-const PICO_ERASE_PAGE_SIZE = 4096
-const PICO_PROG_PAGE_SIZE = 256
-
-const PICO_UF2_FAMILYID uint32 = 0xe48bff56
-
 func ensure_mount(cfg *LittleFsConfig) *LittleFs {
 	var lfs *LittleFs
 

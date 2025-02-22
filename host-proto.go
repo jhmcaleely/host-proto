@@ -24,43 +24,13 @@ const PICO_PROG_PAGE_SIZE = 256
 
 const PICO_UF2_FAMILYID uint32 = 0xe48bff56
 
-type BdFS struct {
-	cfg *LittleFsConfig
-	FsP *C.struct_flash_fs
-
-	Device *C.struct_block_device
-}
-
-func newBdFS(device *C.struct_block_device, blockCount uint32) *BdFS {
-	cfg := BdFS{cfg: newLittleFsConfig(blockCount)}
-
-	var blockfs C.struct_flash_fs
-	cfg.FsP = &blockfs
-
-	cfg.Device = device
-
-	return &cfg
-}
-
-func (fs *BdFS) init(baseAddr uint32) error {
-
-	C.install_bdfs_hooks(fs.cfg.chandle, fs.FsP, fs.Device, C.uint32_t(baseAddr))
-
-	return nil
-}
-
-func (fs *BdFS) Close() error {
-	C.remove_bdfs_hooks(fs.cfg.chandle, fs.FsP)
-	return nil
-}
-
-func (fs *BdFS) ensure_mount() *LittleFs {
+func ensure_mount(cfg *LittleFsConfig) *LittleFs {
 	var lfs *LittleFs
 
-	lfs, err := fs.cfg.Mount()
+	lfs, err := cfg.Mount()
 	if err != nil {
-		lfsFormat(fs.cfg.chandle)
-		lfs, err = fs.cfg.Mount()
+		cfg.Format()
+		lfs, _ = cfg.Mount()
 	}
 	return lfs
 }
@@ -125,7 +95,7 @@ func bootCountDemo(fsFilename string) {
 
 	bdReadFromUF2(device, f)
 
-	lfs := fs.ensure_mount()
+	lfs := ensure_mount(fs.cfg)
 	defer lfs.Close()
 
 	update_boot_count(lfs)
@@ -157,7 +127,7 @@ func addFile(fsFilename, fileToAdd string) {
 
 	bdReadFromUF2(device, f)
 
-	lfs := fs.ensure_mount()
+	lfs, _ := fs.cfg.Mount()
 	defer lfs.Close()
 
 	add_file(lfs, fileToAdd)
@@ -210,7 +180,7 @@ func lsDir(fsFilename, dirEntry string) {
 
 	bdReadFromUF2(device, f)
 
-	lfs := fs.ensure_mount()
+	lfs, _ := fs.cfg.Mount()
 	defer lfs.Close()
 
 	list_files(lfs, dirEntry)

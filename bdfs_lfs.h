@@ -22,7 +22,8 @@ struct flash_fs {
 };
 
 // configuration of the filesystem is provided by this function
-void init_fscfg(struct lfs_config* cfg, struct flash_fs* fs, struct block_device* bd, uint32_t fs_base_address, uint32_t fs_block_count);
-void destroy_fscfg(struct lfs_config* cfg, struct flash_fs* fs);
+void install_bdfs_hooks(struct lfs_config* cfg, struct flash_fs* fs, struct block_device* bd, uint32_t fs_base_address);
+
+void remove_bdfs_hooks(struct lfs_config* cfg, struct flash_fs* fs);
 
 #endif

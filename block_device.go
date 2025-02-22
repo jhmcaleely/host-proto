@@ -27,8 +27,8 @@ func (bd BlockDevice) Close() error {
 func (bd BlockDevice) CountPages() uint32 {
 	count := uint32(0)
 
-	for b := uint32(0); b < PICO_DEVICE_BLOCK_COUNT; b++ {
-		for p := uint32(0); p < PICO_FLASH_PAGE_PER_BLOCK; p++ {
+	for b := uint32(0); b < bd.BlockCount(); b++ {
+		for p := uint32(0); p < bd.PagePerBlock(); p++ {
 			if bd.PagePresent(b, p) {
 				count++
 			}
@@ -39,8 +39,8 @@ func (bd BlockDevice) CountPages() uint32 {
 }
 
 func (bd BlockDevice) DebugPrint() {
-	for b := uint32(0); b < PICO_DEVICE_BLOCK_COUNT; b++ {
-		for p := uint32(0); p < PICO_FLASH_PAGE_PER_BLOCK; p++ {
+	for b := uint32(0); b < bd.BlockCount(); b++ {
+		for p := uint32(0); p < bd.PagePerBlock(); p++ {
 			if bd.PagePresent(b, p) {
 				log.Printf("Page [%v, %v]: 0x%08x\n", b, p, bd.TargetAddress(b, p))
 			}
@@ -66,6 +66,14 @@ func (bd BlockDevice) IsBlockStart(targetAddr uint32) bool {
 
 func (bd BlockDevice) getDeviceBlockNo(address uint32) uint32 {
 	return (address - uint32(C.bdBaseAddress(bd.chandle))) / PICO_ERASE_PAGE_SIZE
+}
+
+func (bd BlockDevice) BlockCount() uint32 {
+	return PICO_DEVICE_BLOCK_COUNT
+}
+
+func (bd BlockDevice) PagePerBlock() uint32 {
+	return PICO_FLASH_PAGE_PER_BLOCK
 }
 
 func (bd BlockDevice) EraseBlock(address uint32) {

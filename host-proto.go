@@ -1,10 +1,5 @@
 package main
 
-/*
-#include "block_device.h"
-*/
-import "C"
-
 import (
 	"encoding/binary"
 	"flag"
@@ -71,8 +66,8 @@ func bootCountDemo(fsFilename string) {
 	}
 	defer f.Close()
 
-	device := C.bdCreate(C.uint32_t(PICO_FLASH_BASE_ADDR))
-	defer C.bdDestroy(device)
+	device := newBlockDevice()
+	defer device.Close()
 
 	fs := newBdFS(device, FLASHFS_BASE_ADDR, FLASHFS_BLOCK_COUNT)
 	var pin runtime.Pinner
@@ -103,8 +98,8 @@ func addFile(fsFilename, fileToAdd string) {
 	}
 	defer f.Close()
 
-	device := C.bdCreate(C.uint32_t(PICO_FLASH_BASE_ADDR))
-	defer C.bdDestroy(device)
+	device := newBlockDevice()
+	defer device.Close()
 
 	fs := newBdFS(device, FLASHFS_BASE_ADDR, FLASHFS_BLOCK_COUNT)
 	var pin runtime.Pinner
@@ -153,8 +148,8 @@ func lsDir(fsFilename, dirEntry string) {
 	}
 	defer f.Close()
 
-	device := C.bdCreate(C.uint32_t(PICO_FLASH_BASE_ADDR))
-	defer C.bdDestroy(device)
+	device := newBlockDevice()
+	defer device.Close()
 
 	fs := newBdFS(device, FLASHFS_BASE_ADDR, FLASHFS_BLOCK_COUNT)
 	var pin runtime.Pinner

@@ -12,13 +12,13 @@ type BdFS struct {
 	Device *C.struct_block_device
 }
 
-func newBdFS(device *C.struct_block_device, baseAddr uint32, blockCount uint32) *BdFS {
+func newBdFS(device BlockDevice, baseAddr uint32, blockCount uint32) *BdFS {
 
 	var blockfs C.struct_flash_fs
-	blockfs.device = device
+	blockfs.device = device.chandle
 	blockfs.fs_flash_base_address = C.uint32_t(baseAddr)
 
-	cfg := BdFS{cfg: newLittleFsConfig(blockCount), FsP: &blockfs, Device: device}
+	cfg := BdFS{cfg: newLittleFsConfig(blockCount), FsP: &blockfs, Device: device.chandle}
 	return &cfg
 }
 

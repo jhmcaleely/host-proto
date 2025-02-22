@@ -57,44 +57,6 @@ func add_file(lfs LittleFs, fileToAdd string) {
 	file.Write(data)
 }
 
-func bootCountDemo(fs BdFS, fsFilename string) {
-	f, err := os.OpenFile(fsFilename, os.O_RDWR|os.O_CREATE, 0666)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	defer f.Close()
-
-	fs.device.ReadFromUF2(f)
-
-	lfs := ensure_mount(fs.cfg)
-	defer lfs.Close()
-
-	update_boot_count(lfs)
-
-	f.Seek(0, io.SeekStart)
-
-	fs.device.WriteAsUF2(f)
-}
-
-func addFile(fs BdFS, fsFilename, fileToAdd string) {
-	f, err := os.OpenFile(fsFilename, os.O_RDWR|os.O_CREATE, 0666)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	defer f.Close()
-
-	fs.device.ReadFromUF2(f)
-
-	lfs, _ := fs.cfg.Mount()
-	defer lfs.Close()
-
-	add_file(lfs, fileToAdd)
-
-	f.Seek(0, io.SeekStart)
-
-	fs.device.WriteAsUF2(f)
-}
-
 func list_files(fs LittleFs, dirEntry string) {
 
 	dir, err := fs.OpenDir(dirEntry)
@@ -113,14 +75,51 @@ func list_files(fs LittleFs, dirEntry string) {
 
 }
 
-func lsDir(fs BdFS, fsFilename, dirEntry string) {
-	f, err := os.OpenFile(fsFilename, os.O_RDWR|os.O_CREATE, 0666)
+func (bd BlockDevice) readFromUF2File(filename string) (e error) {
+	f, e := os.Open(filename)
+	if e == nil {
+		defer f.Close()
+		bd.ReadFromUF2(f)
+	}
+	return e
+}
+
+func (bd BlockDevice) writeToUF2File(filename string) error {
+	f, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE, 0666)
 	if err != nil {
 		log.Fatalln(err)
 	}
 	defer f.Close()
 
-	fs.device.ReadFromUF2(f)
+	bd.WriteAsUF2(f)
+
+	return nil
+}
+
+func cmdBootCountDemo(fs BdFS, fsFilename string) {
+	fs.device.readFromUF2File(fsFilename)
+
+	lfs := ensure_mount(fs.cfg)
+	defer lfs.Close()
+
+	update_boot_count(lfs)
+
+	fs.device.writeToUF2File(fsFilename)
+}
+
+func cmdAddFile(fs BdFS, fsFilename, fileToAdd string) {
+	fs.device.readFromUF2File(fsFilename)
+
+	lfs, _ := fs.cfg.Mount()
+	defer lfs.Close()
+
+	add_file(lfs, fileToAdd)
+
+	fs.device.writeToUF2File(fsFilename)
+}
+
+func cmdLs(fs BdFS, fsFilename, dirEntry string) {
+	fs.device.readFromUF2File(fsFilename)
 
 	lfs, _ := fs.cfg.Mount()
 	defer lfs.Close()
@@ -155,17 +154,17 @@ func main() {
 	switch os.Args[1] {
 	case "bootcount":
 		bootCountDemoCmd.Parse(os.Args[2:])
-		bootCountDemo(*fs, *bootCountFS)
+		cmdBootCountDemo(*fs, *bootCountFS)
 	case "addfile":
 		addFileCmd.Parse(os.Args[2:])
 		if *addFileName == "" {
 			fmt.Println("expect filename to add")
 			os.Exit(1)
 		}
-		addFile(*fs, *addFileFS, *addFileName)
+		cmdAddFile(*fs, *addFileFS, *addFileName)
 	case "ls":
 		lsDirCmd.Parse((os.Args[2:]))
-		lsDir(*fs, *lsDirFS, *lsDirEntry)
+		cmdLs(*fs, *lsDirFS, *lsDirEntry)
 	default:
 		fmt.Println("unknown command")
 		os.Exit(1)

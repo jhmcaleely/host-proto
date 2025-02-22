@@ -59,15 +59,12 @@ func add_file(lfs *LittleFs, fileToAdd string) {
 	file.Write(data)
 }
 
-func bootCountDemo(fsFilename string) {
+func bootCountDemo(device BlockDevice, fsFilename string) {
 	f, err := os.OpenFile(fsFilename, os.O_RDWR|os.O_CREATE, 0666)
 	if err != nil {
 		log.Fatalln(err)
 	}
 	defer f.Close()
-
-	device := newBlockDevice()
-	defer device.Close()
 
 	fs := newBdFS(device, FLASHFS_BASE_ADDR, FLASHFS_BLOCK_COUNT)
 	var pin runtime.Pinner
@@ -91,15 +88,12 @@ func bootCountDemo(fsFilename string) {
 	bdWriteToUF2(device, f)
 }
 
-func addFile(fsFilename, fileToAdd string) {
+func addFile(device BlockDevice, fsFilename, fileToAdd string) {
 	f, err := os.OpenFile(fsFilename, os.O_RDWR|os.O_CREATE, 0666)
 	if err != nil {
 		log.Fatalln(err)
 	}
 	defer f.Close()
-
-	device := newBlockDevice()
-	defer device.Close()
 
 	fs := newBdFS(device, FLASHFS_BASE_ADDR, FLASHFS_BLOCK_COUNT)
 	var pin runtime.Pinner
@@ -141,15 +135,12 @@ func list_files(fs *LittleFs, dirEntry string) {
 
 }
 
-func lsDir(fsFilename, dirEntry string) {
+func lsDir(device BlockDevice, fsFilename, dirEntry string) {
 	f, err := os.OpenFile(fsFilename, os.O_RDWR|os.O_CREATE, 0666)
 	if err != nil {
 		log.Fatalln(err)
 	}
 	defer f.Close()
-
-	device := newBlockDevice()
-	defer device.Close()
 
 	fs := newBdFS(device, FLASHFS_BASE_ADDR, FLASHFS_BLOCK_COUNT)
 	var pin runtime.Pinner
@@ -187,20 +178,23 @@ func main() {
 		os.Exit(1)
 	}
 
+	device := newBlockDevice()
+	defer device.Close()
+
 	switch os.Args[1] {
 	case "bootcount":
 		bootCountDemoCmd.Parse(os.Args[2:])
-		bootCountDemo(*bootCountFS)
+		bootCountDemo(device, *bootCountFS)
 	case "addfile":
 		addFileCmd.Parse(os.Args[2:])
 		if *addFileName == "" {
 			fmt.Println("expect filename to add")
 			os.Exit(1)
 		}
-		addFile(*addFileFS, *addFileName)
+		addFile(device, *addFileFS, *addFileName)
 	case "ls":
 		lsDirCmd.Parse((os.Args[2:]))
-		lsDir(*lsDirFS, *lsDirEntry)
+		lsDir(device, *lsDirFS, *lsDirEntry)
 	default:
 		fmt.Println("unknown command")
 		os.Exit(1)

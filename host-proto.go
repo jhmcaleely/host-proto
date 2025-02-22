@@ -70,7 +70,7 @@ func bootCountDemo(device BlockDevice, fsFilename string) {
 
 	bdReadFromUF2(device, f)
 
-	lfs := ensure_mount(*fs.cfg)
+	lfs := ensure_mount(fs.cfg)
 	defer lfs.Close()
 
 	update_boot_count(lfs)

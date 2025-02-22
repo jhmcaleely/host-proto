@@ -16,6 +16,9 @@
 // A start location counted back from the end of the device.
 #define FLASHFS_BASE_ADDR (PICO_FLASH_BASE_ADDR + PICO_FLASH_SIZE_BYTES - FLASHFS_SIZE_BYTES)
 
+struct lfs_config;
+struct block_device;
+
 struct flash_fs {
     struct block_device* device;
     uint32_t fs_flash_base_address;

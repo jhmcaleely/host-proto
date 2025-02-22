@@ -42,6 +42,19 @@ type LittleFs struct {
 	chandle *C.lfs_t
 }
 
+type LittleFsEntryType int8
+
+const (
+	EntryTypeReg LittleFsEntryType = C.LFS_TYPE_REG
+	EntryTypeDir                   = C.LFS_TYPE_DIR
+)
+
+type LittleFsInfo struct {
+	Type LittleFsEntryType
+	Size uint32
+	Name string
+}
+
 func newLittleFs() *LittleFs {
 	var clfs C.lfs_t
 	lfs := LittleFs{chandle: &clfs}
@@ -100,54 +113,68 @@ func (cfg *LittleFsConfig) Format() error {
 }
 
 type LfsDir struct {
-	Lfs *LittleFs
-	Dir C.lfs_dir_t
+	fs      *LittleFs
+	chandle *C.lfs_dir_t
 }
 
-func (dir *LfsDir) Open(name string) error {
-	dirp := &dir.Dir
+func newLfsDir(lfs *LittleFs) LfsDir {
+	var cdir C.lfs_dir_t
+	dir := LfsDir{fs: lfs, chandle: &cdir}
+	return dir
+}
+
+func (fs LittleFs) OpenDir(name string) (LfsDir, error) {
+	dir := newLfsDir(&fs)
+	err := dir.Open(name)
+	return dir, err
+}
+
+func (dir LfsDir) Open(name string) error {
 	var pin runtime.Pinner
-	pin.Pin(dirp)
+	pin.Pin(dir.chandle)
 	defer pin.Unpin()
 
-	pin.Pin(dir.Lfs.chandle)
+	pin.Pin(dir.fs.chandle)
 
 	cname := C.CString(name)
 	defer C.free(unsafe.Pointer(cname))
 
-	result := C.lfs_dir_open(dir.Lfs.chandle, dirp, cname)
+	result := C.lfs_dir_open(dir.fs.chandle, dir.chandle, cname)
 	if result < 0 {
 		return errors.New("dir open failed")
 	}
 	return nil
 }
 
-func (dir *LfsDir) Close() error {
-	dirp := &dir.Dir
+func (dir LfsDir) Close() error {
 	var pin runtime.Pinner
-	pin.Pin(dirp)
+	pin.Pin(dir.chandle)
 	defer pin.Unpin()
-	pin.Pin(dir.Lfs.chandle)
+	pin.Pin(dir.fs.chandle)
 
-	result := C.lfs_dir_close(dir.Lfs.chandle, dirp)
+	result := C.lfs_dir_close(dir.fs.chandle, dir.chandle)
 	if result < 0 {
 		return errors.New("dir close failed")
 	}
 	return nil
 }
 
-func (dir *LfsDir) Read(info *C.struct_lfs_info) (bool, error) {
-	dirp := &dir.Dir
+func (dir LfsDir) Read() (more bool, info LittleFsInfo, err error) {
 	var pin runtime.Pinner
-	pin.Pin(dirp)
+	pin.Pin(dir.chandle)
 	defer pin.Unpin()
-	pin.Pin(dir.Lfs.chandle)
+	pin.Pin(dir.fs.chandle)
 
-	result := C.lfs_dir_read(dir.Lfs.chandle, dirp, info)
+	var cinfo C.struct_lfs_info
+
+	result := C.lfs_dir_read(dir.fs.chandle, dir.chandle, &cinfo)
 	if result < 0 {
-		return false, errors.New("dir read failed")
+		return false, info, errors.New("dir read failed")
 	} else {
-		return result != 0, nil
+		info.Type = LittleFsEntryType(cinfo._type)
+		info.Size = uint32(cinfo.size)
+		info.Name = C.GoString(&cinfo.name[0])
+		return result != 0, info, nil
 	}
 }
 

@@ -1,8 +1,6 @@
 package main
 
 /*
-#include "lfs.h"
-#include "bdfs_lfs.h"
 #include "block_device.h"
 */
 import "C"
@@ -139,21 +137,18 @@ func addFile(fsFilename, fileToAdd string) {
 
 func list_files(fs *LittleFs, dirEntry string) {
 
-	dir := LfsDir{Lfs: fs}
-	err := dir.Open(dirEntry)
+	dir, err := fs.OpenDir(dirEntry)
 	if err != nil {
 		fmt.Println(err.Error())
 		os.Exit(10)
 	}
 	defer dir.Close()
 
-	var info C.struct_lfs_info
-
-	for more, err := dir.Read(&info); more; more, err = dir.Read(&info) {
+	for more, info, err := dir.Read(); more; more, info, err = dir.Read() {
 		if err != nil {
 			os.Exit(10)
 		}
-		fmt.Println(C.GoString(&info.name[0]))
+		fmt.Println(info.Name)
 	}
 
 }

@@ -1,5 +1,5 @@
 #include "lfs.h"
-#include "bdfs_lfs.h"
+#include "bdfs_lfs_hal.h"
 
 int bdfs_read_cgo(const struct lfs_config* c, lfs_block_t block, lfs_off_t off, void *buffer, lfs_size_t size);
 int bdfs_prog_page_cgo(const struct lfs_config* c, lfs_block_t block, lfs_off_t off, const void *buffer, lfs_size_t size);

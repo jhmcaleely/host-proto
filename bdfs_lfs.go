@@ -1,7 +1,7 @@
 package main
 
 /*
-#include "bdfs_lfs.h"
+#include "bdfs_lfs_hal.h"
 */
 import "C"
 import (

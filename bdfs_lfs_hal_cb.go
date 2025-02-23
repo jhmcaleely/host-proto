@@ -2,7 +2,7 @@ package main
 
 /*
 #include "lfs.h"
-#include "bdfs_lfs.h"
+#include "bdfs_lfs_hal.h"
 #include "block_device.h"
 */
 import "C"

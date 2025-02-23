@@ -26,6 +26,7 @@ const (
 type BdFS struct {
 	cfg      LittleFsConfig
 	flash_fs FlashFS
+	gohandle *FlashFS
 	pins     *runtime.Pinner
 }
 
@@ -33,10 +34,13 @@ func newBdFS(device BlockDevice, baseAddr uint32, blockCount uint32) *BdFS {
 
 	cfg := BdFS{cfg: *newLittleFsConfig(blockCount), flash_fs: FlashFS{device: device, base_address: baseAddr}, pins: &runtime.Pinner{}}
 
+	cfg.gohandle = &cfg.flash_fs
+
+	cfg.pins.Pin(cfg.gohandle)
 	cfg.pins.Pin(cfg.cfg.chandle)
 	cfg.pins.Pin(cfg.flash_fs.device.chandle)
 
-	C.install_bdfs_hooks(cfg.cfg.chandle, C.uintptr_t(uintptr(unsafe.Pointer(&cfg.flash_fs))))
+	C.install_bdfs_hooks(cfg.cfg.chandle, C.uintptr_t(uintptr(unsafe.Pointer(cfg.gohandle))))
 	cfg.pins.Pin(cfg.cfg.chandle.context)
 
 	return &cfg

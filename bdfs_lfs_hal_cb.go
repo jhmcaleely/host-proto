@@ -1,7 +1,7 @@
 package main
 
 /*
-#include "lfs.h"
+#include "littlefs/lfs.h"
 #include "block_device.h"
 */
 import "C"

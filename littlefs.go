@@ -1,8 +1,8 @@
 package main
 
 /*
-#include "stdlib.h"
-#include "lfs.h"
+#include <stdlib.h>
+#include "littlefs/lfs.h"
 */
 import "C"
 import (

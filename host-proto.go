@@ -94,37 +94,37 @@ func (bd BlockDevice) writeToUF2File(filename string) error {
 }
 
 func cmdBootCountDemo(fs BdFS, fsFilename string) {
-	fs.device.readFromUF2File(fsFilename)
+	fs.flash_fs.device.readFromUF2File(fsFilename)
 
 	lfs := ensure_mount(fs.cfg)
 	defer lfs.Close()
 
 	update_boot_count(lfs)
 
-	fs.device.writeToUF2File(fsFilename)
+	fs.flash_fs.device.writeToUF2File(fsFilename)
 }
 
 func formatCmd(fs BdFS, fsFilename string) {
-	fs.device.readFromUF2File(fsFilename)
+	fs.flash_fs.device.readFromUF2File(fsFilename)
 
 	fs.cfg.Format()
 
-	fs.device.writeToUF2File(fsFilename)
+	fs.flash_fs.device.writeToUF2File(fsFilename)
 }
 
 func cmdAddFile(fs BdFS, fsFilename, fileToAdd string) {
-	fs.device.readFromUF2File(fsFilename)
+	fs.flash_fs.device.readFromUF2File(fsFilename)
 
 	lfs, _ := fs.cfg.Mount()
 	defer lfs.Close()
 
 	add_file(lfs, fileToAdd)
 
-	fs.device.writeToUF2File(fsFilename)
+	fs.flash_fs.device.writeToUF2File(fsFilename)
 }
 
 func cmdLs(fs BdFS, fsFilename, dirEntry string) {
-	fs.device.readFromUF2File(fsFilename)
+	fs.flash_fs.device.readFromUF2File(fsFilename)
 
 	lfs, _ := fs.cfg.Mount()
 	defer lfs.Close()

@@ -2,50 +2,51 @@ package main
 
 /*
 #include "lfs.h"
-#include "bdfs_lfs_hal.h"
 #include "block_device.h"
 */
 import "C"
 import "unsafe"
 
-func fsAddressForBlock(fs_base_address C.uint32_t, block C.lfs_block_t, off C.lfs_off_t) C.uint32_t {
+func fsAddressForBlock(fs_base_address uint32, block C.lfs_block_t, off C.lfs_off_t) C.uint32_t {
 
 	byte_offset := block*PICO_ERASE_PAGE_SIZE + off
 
-	return fs_base_address + byte_offset
+	return C.uint32_t(fs_base_address) + C.uint32_t(byte_offset)
 }
 
 //export go_bdfs_read
-func go_bdfs_read(fs *C.struct_flash_fs, block C.lfs_block_t, off C.lfs_off_t, buffer *C.void, size C.lfs_size_t) C.int {
+func go_bdfs_read(flash_fs C.uintptr_t, block C.lfs_block_t, off C.lfs_off_t, buffer *C.void, size C.lfs_size_t) C.int {
 
-	device_address := fsAddressForBlock(fs.fs_flash_base_address, block, off)
+	fs := (*FlashFS)(unsafe.Pointer(uintptr(flash_fs)))
 
-	C.bdRead(fs.device, device_address, (*C.uint8_t)(unsafe.Pointer(buffer)), C.size_t(size))
+	device_address := fsAddressForBlock(fs.base_address, block, off)
+
+	C.bdRead(fs.device.chandle, device_address, (*C.uint8_t)(unsafe.Pointer(buffer)), C.size_t(size))
 
 	return C.LFS_ERR_OK
 }
 
 //export go_bdfs_prog_page
-func go_bdfs_prog_page(fs *C.struct_flash_fs, block C.lfs_block_t, off C.lfs_off_t, buffer *C.void, size C.lfs_size_t) C.int {
+func go_bdfs_prog_page(flash_fs C.uintptr_t, block C.lfs_block_t, off C.lfs_off_t, buffer *C.void, size C.lfs_size_t) C.int {
 
-	device_address := fsAddressForBlock(fs.fs_flash_base_address, block, off)
+	fs := (*FlashFS)(unsafe.Pointer(uintptr(flash_fs)))
 
-	C.bdWrite(fs.device, device_address, (*C.uint8_t)(unsafe.Pointer(buffer)), C.size_t(size))
+	device_address := fsAddressForBlock(fs.base_address, block, off)
 
-	bd := BlockDevice{chandle: fs.device}
+	C.bdWrite(fs.device.chandle, device_address, (*C.uint8_t)(unsafe.Pointer(buffer)), C.size_t(size))
 
-	bd.DebugPrint()
+	fs.device.DebugPrint()
 
 	return C.LFS_ERR_OK
 }
 
 //export go_bdfs_erase_block
-func go_bdfs_erase_block(fs *C.struct_flash_fs, block C.lfs_block_t) C.int {
+func go_bdfs_erase_block(flash_fs C.uintptr_t, block C.lfs_block_t) C.int {
 
-	device_address := fsAddressForBlock(fs.fs_flash_base_address, block, 0)
-	bd := BlockDevice{chandle: fs.device}
+	fs := (*FlashFS)(unsafe.Pointer(uintptr(flash_fs)))
+	device_address := fsAddressForBlock(fs.base_address, block, 0)
 
-	bd.EraseBlock(uint32(device_address))
+	fs.device.EraseBlock(uint32(device_address))
 
 	return C.LFS_ERR_OK
 }

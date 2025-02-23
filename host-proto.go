@@ -134,6 +134,8 @@ func cmdLs(fs BdFS, fsFilename, dirEntry string) {
 
 func main() {
 
+	log.SetOutput(io.Discard)
+
 	bootCountDemoCmd := flag.NewFlagSet("bootcount", flag.ExitOnError)
 	bootCountFS := bootCountDemoCmd.String("fs", "test.uf2", "mount and increment boot_count on fs")
 

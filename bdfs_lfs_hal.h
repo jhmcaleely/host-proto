@@ -5,6 +5,6 @@
 
 struct lfs_config;
 
-void install_bdfs_hooks(struct lfs_config* cfg, uintptr_t flash_fs);
+void install_bdfs_cb(struct lfs_config* cfg, uintptr_t flash_fs);
 
 #endif

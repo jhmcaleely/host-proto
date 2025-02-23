@@ -40,7 +40,7 @@ func newBdFS(device BlockDevice, baseAddr uint32, blockCount uint32) *BdFS {
 	cfg.pins.Pin(cfg.cfg.chandle)
 	cfg.pins.Pin(cfg.flash_fs.device.storage)
 
-	C.install_bdfs_hooks(cfg.cfg.chandle, C.uintptr_t(uintptr(unsafe.Pointer(cfg.gohandle))))
+	C.install_bdfs_cb(cfg.cfg.chandle, C.uintptr_t(uintptr(unsafe.Pointer(cfg.gohandle))))
 	cfg.pins.Pin(cfg.cfg.chandle.context)
 
 	return &cfg

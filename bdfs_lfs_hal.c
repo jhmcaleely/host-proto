@@ -10,7 +10,7 @@ static int sync_nop(const struct lfs_config *c) {
     return LFS_ERR_OK;
 }
 
-void install_bdfs_hooks(struct lfs_config* cfg, uintptr_t flash_fs) {
+void install_bdfs_cb(struct lfs_config* cfg, uintptr_t flash_fs) {
     cfg->read = bdfs_read_cgo;
     cfg->prog  = bdfs_prog_page_cgo;
     cfg->erase = bdfs_erase_block_cgo;

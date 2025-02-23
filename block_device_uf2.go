@@ -1,15 +1,9 @@
 package main
 
-/*
-#include "block_device.h"
-*/
-import "C"
-
 import (
 	"encoding/binary"
 	"io"
 	"log"
-	"unsafe"
 )
 
 type Uf2Frame struct {
@@ -56,7 +50,7 @@ func (device BlockDevice) ReadFromUF2(input io.Reader) {
 			device.EraseBlock(frame.TargetAddr)
 		}
 
-		C.bdWrite(device.chandle, C.uint32_t(frame.TargetAddr), (*C.uint8_t)(unsafe.Pointer(&frame.Data[0])), C.size_t(frame.PayloadSize))
+		device.WriteBlock(frame.TargetAddr, frame.Data[0:frame.PayloadSize])
 	}
 }
 
@@ -79,7 +73,7 @@ func (device BlockDevice) WriteAsUF2(output io.Writer) {
 					MagicEnd:    UF2_MAGIC_END,
 				}
 
-				C.bdRead(device.chandle, C.uint32_t(frame.TargetAddr), (*C.uint8_t)(unsafe.Pointer(&frame.Data[0])), C.size_t(frame.PayloadSize))
+				copy(frame.Data[0:frame.PayloadSize], device.ReadBlock(frame.TargetAddr, frame.PayloadSize))
 
 				log.Printf("uf2page: %08x, %d\n", frame.TargetAddr, frame.PayloadSize)
 

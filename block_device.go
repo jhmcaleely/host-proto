@@ -73,8 +73,8 @@ func (bd BlockDevice) Close() error {
 func (bd BlockDevice) CountPages() uint32 {
 	count := uint32(0)
 
-	for b := uint32(0); b < bd.BlockCount(); b++ {
-		for p := uint32(0); p < bd.PagePerBlock(); p++ {
+	for b := range bd.BlockCount() {
+		for p := range bd.PagePerBlock() {
 			if bd.PagePresent(b, p) {
 				count++
 			}
@@ -85,8 +85,8 @@ func (bd BlockDevice) CountPages() uint32 {
 }
 
 func (bd BlockDevice) DebugPrint() {
-	for b := uint32(0); b < bd.BlockCount(); b++ {
-		for p := uint32(0); p < bd.PagePerBlock(); p++ {
+	for b := range bd.BlockCount() {
+		for p := range bd.PagePerBlock() {
 			if bd.PagePresent(b, p) {
 				log.Printf("Page [%v, %v]: 0x%08x\n", b, p, bd.TargetAddress(b, p))
 			}

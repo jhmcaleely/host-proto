@@ -58,8 +58,8 @@ func (device BlockDevice) WriteAsUF2(output io.Writer) {
 	pageTotal := device.CountPages()
 	pageCursor := uint32(0)
 
-	for b := uint32(0); b < device.BlockCount(); b++ {
-		for p := uint32(0); p < device.PagePerBlock(); p++ {
+	for b := range device.BlockCount() {
+		for p := range device.PagePerBlock() {
 			if device.PagePresent(b, p) {
 				frame := Uf2Frame{
 					MagicStart0: UF2_MAGIC_START0,

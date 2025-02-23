@@ -52,20 +52,20 @@ func (bd BlockDevice) PagePresent(block, page uint32) bool {
 	return C.bdPagePresent(bd.chandle, C.uint32_t(block), C.uint32_t(page)) != 0
 }
 
-func storageOffset(block, page uint32) uint32 {
-	return block*PICO_ERASE_PAGE_SIZE + page*PICO_PROG_PAGE_SIZE
+func (bd BlockDevice) storageOffset(block, page uint32) uint32 {
+	return block*bd.EraseBlockSize() + page*PICO_PROG_PAGE_SIZE
 }
 
 func (bd BlockDevice) TargetAddress(block, page uint32) uint32 {
-	return uint32(C.bdBaseAddress(bd.chandle)) + storageOffset(block, page)
+	return uint32(C.bdBaseAddress(bd.chandle)) + bd.storageOffset(block, page)
 }
 
 func (bd BlockDevice) IsBlockStart(targetAddr uint32) bool {
-	return (((targetAddr - uint32(C.bdBaseAddress(bd.chandle))) % PICO_ERASE_PAGE_SIZE) == 0)
+	return (((targetAddr - uint32(C.bdBaseAddress(bd.chandle))) % bd.EraseBlockSize()) == 0)
 }
 
 func (bd BlockDevice) getDeviceBlockNo(address uint32) uint32 {
-	return (address - uint32(C.bdBaseAddress(bd.chandle))) / PICO_ERASE_PAGE_SIZE
+	return (address - uint32(C.bdBaseAddress(bd.chandle))) / bd.EraseBlockSize()
 }
 
 func (bd BlockDevice) BlockCount() uint32 {
@@ -74,6 +74,10 @@ func (bd BlockDevice) BlockCount() uint32 {
 
 func (bd BlockDevice) PagePerBlock() uint32 {
 	return PICO_FLASH_PAGE_PER_BLOCK
+}
+
+func (bd BlockDevice) EraseBlockSize() uint32 {
+	return PICO_ERASE_PAGE_SIZE
 }
 
 func (bd BlockDevice) EraseBlock(address uint32) {

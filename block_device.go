@@ -11,11 +11,19 @@ type BlockDeviceStorage struct {
 }
 
 func (s *BlockDeviceStorage) BlockPageLocation(block, page uint32) uint32 {
-	return block*PICO_ERASE_PAGE_SIZE + page*PICO_PROG_PAGE_SIZE
+	return block*s.EraseBlockSize() + page*s.ProgPageSize()
 }
 
 func (s *BlockDeviceStorage) BlockPageOffsetLocation(block, page, offset uint32) uint32 {
 	return s.BlockPageLocation(block, page) + offset
+}
+
+func (s *BlockDeviceStorage) ProgPageSize() uint32 {
+	return PICO_PROG_PAGE_SIZE
+}
+
+func (s *BlockDeviceStorage) EraseBlockSize() uint32 {
+	return PICO_ERASE_PAGE_SIZE
 }
 
 func (s *BlockDeviceStorage) EraseBlock(block uint32) {
@@ -102,7 +110,7 @@ func (bd BlockDevice) IsBlockStart(targetAddr uint32) bool {
 	return ((targetAddr - bd.baseAddress) % bd.EraseBlockSize()) == 0
 }
 
-func (bd BlockDevice) bdStorageAdddress(address uint32) (block, page, offset uint32) {
+func (bd BlockDevice) BlockStorageAdddress(address uint32) (block, page, offset uint32) {
 	page_offset := (address - bd.baseAddress) % bd.EraseBlockSize()
 	page = page_offset / PICO_PROG_PAGE_SIZE
 	offset = page_offset % PICO_PROG_PAGE_SIZE
@@ -120,19 +128,19 @@ func (bd BlockDevice) PagePerBlock() uint32 {
 }
 
 func (bd BlockDevice) EraseBlockSize() uint32 {
-	return PICO_ERASE_PAGE_SIZE
+	return bd.storage.EraseBlockSize()
 }
 
 func (bd BlockDevice) EraseBlock(address uint32) {
 
-	block, _, _ := bd.bdStorageAdddress(address)
+	block, _, _ := bd.BlockStorageAdddress(address)
 
 	bd.storage.EraseBlock(block)
 }
 
 func (bd BlockDevice) ReadBlock(address, size uint32) (buffer []byte) {
 
-	block, page, offset := bd.bdStorageAdddress(address)
+	block, page, offset := bd.BlockStorageAdddress(address)
 
 	data := bd.storage.Read(block, page, offset, size)
 	return data
@@ -140,7 +148,7 @@ func (bd BlockDevice) ReadBlock(address, size uint32) (buffer []byte) {
 
 func (bd BlockDevice) WriteBlock(address uint32, buffer []byte) {
 
-	block, page, _ := bd.bdStorageAdddress(address)
+	block, page, _ := bd.BlockStorageAdddress(address)
 
 	bd.storage.WritePage(block, page, buffer)
 }

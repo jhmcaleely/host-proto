@@ -13,10 +13,10 @@ func go_bdfs_read(flash_fs C.uintptr_t, block C.lfs_block_t, off C.lfs_off_t, bu
 	device_address := fs.AddressForBlock(uint32(block), uint32(off))
 
 	data := fs.device.ReadBlock(device_address, uint32(size))
-	if data != nil {
-		var cdata []byte = unsafe.Slice((*uint8)(buffer), size)
-		copy(cdata, data)
-	}
+
+	var cdata []byte = unsafe.Slice((*uint8)(buffer), size)
+
+	copy(cdata, data)
 
 	return C.LFS_ERR_OK
 }
@@ -28,6 +28,7 @@ func go_bdfs_prog_page(flash_fs C.uintptr_t, block C.lfs_block_t, off C.lfs_off_
 	device_address := fs.AddressForBlock(uint32(block), uint32(off))
 
 	godata := C.GoBytes(unsafe.Pointer(buffer), C.int(size))
+
 	fs.device.WriteBlock(device_address, godata)
 
 	fs.device.DebugPrint()
